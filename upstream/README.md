@@ -3,12 +3,13 @@
 
 # Upstream Training
 ```
-python main.py \
-    --input "path_to_input_csv" \
+CUDA_VISIBLE_DEVICES=2,3,4,5 python main.py \
+    --input dummy.csv \
     --epochs 200 \
-    --batch_size 64 \
+    --batch_size 512 \
     --cluster_algo kmeans \
-    --num_clusters 512 \
     --save_dir "path_to_dir_to_be_saved" \
     --num_workers 2
+    --resume
+    --checkpoint_path /speech/srayan/AAAI/DECAR/upstream/best_loss.pth.tar
 ```

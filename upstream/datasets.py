@@ -4,8 +4,9 @@ import torch.utils.data as data
 import tensorflow as tf
 from torch.utils.data import Dataset
 import librosa
+import torch.nn.functional as f
 
-from utils import extract_log_mel_spectrogram, extract_window
+from utils import extract_log_mel_spectrogram, extract_window, extract_log_mel_spectrogram_torch, extract_window_torch, MelSpectrogramLibrosa
 
 
 tf.config.set_visible_devices([], 'GPU')
@@ -37,19 +38,43 @@ class BARLOW(Dataset):
 
     def __init__(self, data_dir_list):
         self.audio_files_list = data_dir_list
+        self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __getitem__(self, idx):
         audio_file = self.audio_files_list[idx]
         wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
-        x = tf.math.l2_normalize(wave, epsilon=1e-9)
+        wave = torch.tensor(wave)
+        x = f.normalize(wave,dim=-1,p=2)
 
-        waveform_a = extract_window(x)
-        log_mel_spec_a = extract_log_mel_spectrogram(waveform_a)
+        waveform_a = extract_window_torch(x)
+        log_mel_spec_a = extract_log_mel_spectrogram_torch(waveform_a, self.to_mel_spec)
 
-        waveform_b = extract_window(x)
-        log_mel_spec_b = extract_log_mel_spectrogram(waveform_b)
+        waveform_b = extract_window_torch(x)
+        log_mel_spec_b = extract_log_mel_spectrogram_torch(waveform_b, self.to_mel_spec)
 
-        return log_mel_spec_a.numpy() , log_mel_spec_b.numpy()
+        return log_mel_spec_a , log_mel_spec_b
 
     def __len__(self):
         return len(self.audio_files_list)
+
+
+# class BARLOW(Dataset):
+
+#     def __init__(self, data_dir_list):
+#         self.audio_files_list = data_dir_list
+
+#     def __getitem__(self, idx):
+#         audio_file = self.audio_files_list[idx]
+#         wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
+#         x = tf.math.l2_normalize(wave, epsilon=1e-9)
+
+#         waveform_a = extract_window(x)
+#         log_mel_spec_a = extract_log_mel_spectrogram(waveform_a)
+
+#         waveform_b = extract_window(x)
+#         log_mel_spec_b = extract_log_mel_spectrogram(waveform_b)
+
+#         return log_mel_spec_a.numpy() , log_mel_spec_b.numpy()
+
+#     def __len__(self):
+#         return len(self.audio_files_list)

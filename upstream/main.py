@@ -95,6 +95,11 @@ def main(gpu, args):
     best_loss = float("inf")
     scaler = torch.cuda.amp.GradScaler()
 
+    if args.rank == 0:
+        stats_file = open(args.save_dir  + "/" + 'stats.txt', 'a', buffering=1)
+    else:
+        stats_file = None
+
     for epoch in range(start_epoch,args.epochs):
 
         sampler.set_epoch(epoch)
@@ -102,7 +107,7 @@ def main(gpu, args):
         if args.rank == 0:
             logger.info("Starting To Train")
 
-        loss = train(args, loader, model, optimizer, epoch, gpu, scaler)
+        loss = train(args, loader, model, optimizer, epoch, gpu, scaler, stats_file)
 
         if args.rank == 0:
             logger.info("Logging and saving checkpoints")
@@ -129,7 +134,7 @@ def main(gpu, args):
                 best_loss = loss
         
 
-def train(args, loader, model, optimizer, epoch, gpu, scaler):
+def train(args, loader, model, optimizer, epoch, gpu, scaler, stats_file):
 
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -161,7 +166,6 @@ def train(args, loader, model, optimizer, epoch, gpu, scaler):
                     'optimizer' : optimizer.state_dict()
                 }, path)
 
-
         input_var_1 = input_tensor_1.cuda(gpu, non_blocking=True)
         input_var_2 = input_tensor_2.cuda(gpu, non_blocking=True)
 
@@ -190,6 +194,10 @@ def train(args, loader, model, optimizer, epoch, gpu, scaler):
                     'Loss: {loss.val:.4f} ({loss.avg:.4f})'
                     .format(epoch, i, len(loader), batch_time=batch_time,
                             data_time=data_time, loss=losses))
+
+            stats = dict(epoch=epoch, step=n, loss=loss.item())
+            print(json.dumps(stats))
+            print(json.dumps(stats), file=stats_file)
 
     return losses.avg
 

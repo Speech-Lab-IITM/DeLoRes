@@ -7,10 +7,22 @@ import torch
 import librosa
 import tensorflow as tf
 import numpy as np
+import torch.nn.functional as F
 
 from os.path import join as path_join
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
+
+
+class MelSpectrogramLibrosa:
+    """Mel spectrogram using librosa."""
+    def __init__(self, fs=16000, n_fft=1024, shift=160, n_mels=64, fmin=60, fmax=7800):
+        self.fs, self.n_fft, self.shift, self.n_mels, self.fmin, self.fmax = fs, n_fft, shift, n_mels, fmin, fmax
+        self.mfb = librosa.filters.mel(sr=fs, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax)
+
+    def __call__(self, audio):
+        X = librosa.stft(np.array(audio), n_fft=self.n_fft, hop_length=self.shift)
+        return torch.tensor(np.matmul(self.mfb, np.abs(X)**2 + np.finfo(float).eps))
 
 
 def extract_log_mel_spectrogram(waveform,
@@ -47,6 +59,12 @@ def extract_log_mel_spectrogram(waveform,
   log_mel_spectrograms = tf.math.log(mel_spectrograms)
 
   return log_mel_spectrograms
+
+def extract_log_mel_spectrogram_torch(waveform, to_mel_spec):
+
+    log_mel_spectrograms = (to_mel_spec(waveform) + torch.finfo().eps).log()
+
+    return log_mel_spectrograms
 
 def compute_features(args, dataloader, model, N): #N is total dataset size
     batch = args.batch_size
@@ -170,6 +188,22 @@ def extract_window(waveform, seg_length=16000):
   right_pad = padding - left_pad
   padded_waveform = tf.pad(waveform, paddings=[[left_pad, right_pad]])
   return tf.image.random_crop(padded_waveform, [seg_length])
+
+def extract_window_torch(wav, seg_length=16000):
+    
+    unit_length = int(0.95 * 16000)
+
+    length_adj = unit_length - len(wav)
+    if length_adj > 0:
+        half_adj = length_adj // 2
+        wav = F.pad(wav, (half_adj, length_adj - half_adj))
+
+    # random crop unit length wave
+    length_adj = unit_length - len(wav)
+    start = random.randint(0, length_adj) if length_adj > 0 else 0
+    wav = wav[start:start + unit_length]
+
+    return wav
 
 def off_diagonal(x):
     # return a flattened view of the off-diagonal elements of a square matrix

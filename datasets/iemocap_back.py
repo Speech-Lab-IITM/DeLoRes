@@ -6,7 +6,7 @@ import tensorflow as tf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa
+from data_utils import extract_log_mel_spectrogram, extract_window
 from datasets.data_utils import DataUtils
 
 class IEMOCAPTrain(Dataset):
@@ -17,7 +17,6 @@ class IEMOCAPTrain(Dataset):
         self.sample_rate = sample_rate
         self.labels_dict ={'neu':0, 'ang':1, 'sad':2, 'hap':3} 
         self.no_of_classes= len(self.labels_dict)
-        self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -26,10 +25,9 @@ class IEMOCAPTrain(Dataset):
         row = self.uttr_labels.iloc[idx,:]
         uttr_path =os.path.join(self.feat_root,row['Path'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
-        wave_audio = torch.tensor(wave_audio)
-        wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
+        wave_normalised = tf.math.l2_normalize(wave_audio, epsilon=1e-9)
         wave_random1sec = extract_window(wave_normalised)
-        uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
+        uttr_melspec = extract_log_mel_spectrogram(wave_random1sec).numpy()
         label = row['Label']
         return uttr_melspec, self.labels_dict[label]
 

@@ -4,38 +4,47 @@ import librosa
 import tensorflow as tf
 import numpy as np
 
-def extract_window(wav, seg_length=16000):
-    """Extract random window of 1 second"""
-    unit_length = int(0.95 * 16000)
-    length_adj = unit_length - len(wav)
-    if length_adj > 0:
-        half_adj = length_adj // 2
-        wav = F.pad(wav, (half_adj, length_adj - half_adj))
-
-    # random crop unit length wave
-    length_adj = unit_length - len(wav)
-    start = random.randint(0, length_adj) if length_adj > 0 else 0
-    wav = wav[start:start + unit_length]
-
-    return wav
+def extract_window(waveform, seg_length=16000):
+    raise NotImplementedError
+    padding = tf.maximum(seg_length - tf.shape(waveform)[0], 0)
+    left_pad = padding // 2
+    right_pad = padding - left_pad
+    padded_waveform = tf.pad(waveform, paddings=[[left_pad, right_pad]])
+    return tf.image.random_crop(padded_waveform, [seg_length])
 
 
-class MelSpectrogramLibrosa:
-    """Mel spectrogram using librosa."""
-    def __init__(self, fs=16000, n_fft=1024, shift=160, n_mels=64, fmin=60, fmax=7800):
-        self.fs, self.n_fft, self.shift, self.n_mels, self.fmin, self.fmax = fs, n_fft, shift, n_mels, fmin, fmax
-        self.mfb = librosa.filters.mel(sr=fs, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax)
+def extract_log_mel_spectrogram(waveform,
+                                sample_rate=16000,
+                                frame_length=400,
+                                frame_step=160,
+                                fft_length=1024,
+                                n_mels=64,
+                                fmin=60.0,
+                                fmax=7800.0):
+    raise NotImplementedError
+    stfts = tf.signal.stft(
+        waveform,
+        frame_length=frame_length,
+        frame_step=frame_step,
+        fft_length=fft_length)
+    spectrograms = tf.abs(stfts)
 
-    def __call__(self, audio):
-        X = librosa.stft(np.array(audio), n_fft=self.n_fft, hop_length=self.shift)
-        return torch.tensor(np.matmul(self.mfb, np.abs(X)**2 + np.finfo(float).eps))
+    num_spectrogram_bins = stfts.shape[-1]
+    lower_edge_hertz, upper_edge_hertz, num_mel_bins = fmin, fmax, n_mels
+    linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
+        num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz,
+        upper_edge_hertz)
+    mel_spectrograms = tf.tensordot(spectrograms, linear_to_mel_weight_matrix, 1)
+    mel_spectrograms.set_shape(spectrograms.shape[:-1].concatenate(
+        linear_to_mel_weight_matrix.shape[-1:]))
 
-def extract_log_mel_spectrogram(waveform, to_mel_spec):
-    """Mel spectrogram using librosa.
-    waveform: torch tenspr waveform
-    to_mel_spec: object of MelSpectrogramLibrosa class"""
+    mel_spectrograms = tf.clip_by_value(
+        mel_spectrograms,
+        clip_value_min=1e-5,
+        clip_value_max=1e8)
 
-    log_mel_spectrograms = (to_mel_spec(waveform) + torch.finfo().eps).log()
+    log_mel_spectrograms = tf.math.log(mel_spectrograms)
+
     return log_mel_spectrograms
 
 

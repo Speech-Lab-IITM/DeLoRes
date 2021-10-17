@@ -191,7 +191,7 @@ def extract_window(waveform, seg_length=16000):
 
 def extract_window_torch(wav, seg_length=16000):
     
-    unit_length = int(0.95 * 16000)
+    unit_length = int(0.96 * 16000)
 
     length_adj = unit_length - len(wav)
     if length_adj > 0:

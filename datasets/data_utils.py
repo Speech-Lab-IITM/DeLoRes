@@ -6,7 +6,7 @@ import numpy as np
 
 def extract_window(wav, seg_length=16000):
     """Extract random window of 1 second"""
-    unit_length = int(0.95 * 16000)
+    unit_length = int(0.96 * 16000)
     length_adj = unit_length - len(wav)
     if length_adj > 0:
         half_adj = length_adj // 2

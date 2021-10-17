@@ -54,7 +54,7 @@ def main_worker(gpu, args):
                                                 pin_memory=True,sampler = train_sampler)
     # ! not required just run things in one gpu else need to take care of reduce operations 
     # test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
-    test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=per_device_batch_size,
+    test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=1,
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)  
 
@@ -157,16 +157,17 @@ def train_one_epoch(loader, model, crit, opt, epoch,gpu,args):
     return stats
 
 def eval(epoch,model,loader,crit,args,gpu,stats_file):
-    model.eval()
+    model.eval() # ! Imp
     losses = AverageMeter()
-    accuracy = Metric() # ! define this
+    accuracy = Metric() 
     with torch.no_grad():
         for step, (input_tensor, targets) in enumerate(loader):
             if torch.cuda.is_available():
                 input_tensor =input_tensor.cuda(gpu ,non_blocking=True)
                 targets = targets.cuda(gpu,non_blocking=True)
             with torch.cuda.amp.autocast():
-                outputs = model(input_tensor)
+                outputs = model(input_tensor) # BS x nclasses 
+                outputs = torch.mean(outputs,dim=0,keepdim=True) # ! 1 x nclases :: averaging outputs 
                 loss = crit(outputs, targets)
                 preds = torch.argmax(outputs,dim=1)==targets
 

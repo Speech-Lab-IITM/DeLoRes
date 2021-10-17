@@ -55,7 +55,7 @@ def main_worker(gpu, args):
     # ! not required just run things in one gpu else need to take care of reduce operations 
     # test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
     test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=1,
-                                                collate_fn = DataUtils.collate_fn_padd_2,
+                                                collate_fn = DataUtils.collate_fn_padd_eval,
                                                 pin_memory=True)  
 
     # models
@@ -162,7 +162,7 @@ def eval(epoch,model,loader,crit,args,gpu,stats_file):
     accuracy = Metric() 
     with torch.no_grad():
         for step, (input_tensor, targets) in enumerate(loader):
-            input_tensor = torch.squeeze(torch.squeeze(input_tensor,0),0)
+            input_tensor = torch.squeeze(input_tensor,0)
             if torch.cuda.is_available():
                 input_tensor =input_tensor.cuda(gpu ,non_blocking=True)
                 targets = targets.cuda(gpu,non_blocking=True)

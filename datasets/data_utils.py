@@ -3,6 +3,8 @@ import torchaudio
 import librosa
 import tensorflow as tf
 import numpy as np
+import random
+import torch.nn.functional as F
 
 def extract_window(wav, seg_length=16000):
     """Extract random window of 1 second"""
@@ -74,21 +76,4 @@ class DataUtils():
         batch_x = batch_x.unsqueeze(1)
         batch_y = torch.Tensor(batch_y).type(torch.LongTensor)
 
-        return batch_x,batch_y
-
-    @classmethod
-    def collate_fn_padd(cls,batch):
-        '''
-        Padds batch of variable length
-        note: it converts things ToTensor manually here since the ToTensor transform
-        assume it takes in images rather than arbitrary tensors.
-        '''
-        ## padd
-        
-        batch_x = [torch.squeeze(torch.Tensor(t)) for t,y in batch]
-        batch_y = [y for t,y in batch]
-        batch_x = torch.nn.utils.rnn.pad_sequence(batch_x,batch_first = True)
-        batch_x = batch_x.unsqueeze(1)
-        batch_y = torch.Tensor(batch_y).type(torch.LongTensor)
-        # print("batch y",batch_y)
         return batch_x,batch_y

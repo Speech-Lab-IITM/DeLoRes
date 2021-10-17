@@ -162,6 +162,7 @@ def eval(epoch,model,loader,crit,args,gpu,stats_file):
     accuracy = Metric() 
     with torch.no_grad():
         for step, (input_tensor, targets) in enumerate(loader):
+            input_tensor = torch.squeeze(torch.squeeze(input_tensor,0),0)
             if torch.cuda.is_available():
                 input_tensor =input_tensor.cuda(gpu ,non_blocking=True)
                 targets = targets.cuda(gpu,non_blocking=True)

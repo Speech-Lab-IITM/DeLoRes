@@ -1,12 +1,4 @@
-from datasets.language_identification import LanguageIdentification
-from datasets.voxceleb import Voxceleb1Dataset
-from datasets.birdsong_dataset import BirdSongDataset ,BirdSongDatasetL2
-from datasets.libri100 import Libri100 ,Libri100L2
-from datasets.tut_urban_sounds import TutUrbanSounds ,TutUrbanSoundsL2
-from datasets.musical_instruments import MusicalInstrumentsDataset
 from datasets.iemocap import  IEMOCAPTest, IEMOCAPTrain
-from datasets.speech_commands_v1 import SpeechCommandsV1 , SpeechCommandsV1L2
-from datasets.speech_commands_v2 import SpeechCommandsV2 , SpeechCommandsV2L2
 import torch
 
 def get_dataset(downstream_task_name):

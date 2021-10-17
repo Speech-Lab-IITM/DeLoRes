@@ -6,12 +6,13 @@ import tensorflow as tf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa
+from datasets.data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa
 from datasets.data_utils import DataUtils
+import torch.nn.functional as f
 
 class IEMOCAPTrain(Dataset):
     def __init__(self,sample_rate=16000):        
-        self.feat_root =  DataUtils.root_dir["IEMOCAP"]
+        self.feat_root =  "/speech/Databases/Birdsong/IEMOCAP/"
         annotations_file=os.path.join(self.feat_root,"train_data.csv")
         self.uttr_labels= pd.read_csv(annotations_file)
         self.sample_rate = sample_rate
@@ -24,7 +25,7 @@ class IEMOCAPTrain(Dataset):
 
     def __getitem__(self, idx):
         row = self.uttr_labels.iloc[idx,:]
-        uttr_path =os.path.join(self.feat_root,row['Path'])
+        uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
         wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
@@ -36,7 +37,7 @@ class IEMOCAPTrain(Dataset):
 
 class IEMOCAPTest(Dataset):
     def __init__(self,sample_rate=16000):        
-        self.feat_root =  DataUtils.root_dir["IEMOCAP"]
+        self.feat_root =  "/speech/Databases/Birdsong/IEMOCAP/"
         annotations_file=os.path.join(self.feat_root,"test_data.csv")
         self.uttr_labels= pd.read_csv(annotations_file)
         self.sample_rate = sample_rate
@@ -50,7 +51,7 @@ class IEMOCAPTest(Dataset):
 
     def __getitem__(self, idx):
         row = self.uttr_labels.iloc[idx,:]
-        uttr_path =os.path.join(self.feat_root,row['Path'])
+        uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio_chopped = tf.signal.frame(
                                     wave_audio,frame_length=self._n_frames * 160,
@@ -61,5 +62,5 @@ class IEMOCAPTest(Dataset):
         for i in np.arange(wave_audio_normalised.shape[0]):
             extracted_logmel.append(extract_log_mel_spectrogram(wave_audio_normalised[i], self.to_mel_spec))
         label = row['Label']
-        return torch.stack(extracted_logmel), self.labels_dict[label]
+        return torch.stack(extracted_logmel).unsqueeze(dim=1), self.labels_dict[label]
 

@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import random
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -23,7 +24,7 @@ def str2bool(v):
 
 def get_downstream_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--down_stream_task', default="birdsong_freefield1010", type=str,
+    parser.add_argument('--down_stream_task', default="iemocap", type=str,
                         help='''down_stream task name one of 
                         birdsong_freefield1010 , birdsong_warblr ,
                         speech_commands_v1 , speech_commands_v2
@@ -35,14 +36,16 @@ def get_downstream_parser():
                         help='number of total epochs to run')
     parser.add_argument('--resume', default = False, type=str2bool,
                         help='number of total epochs to run')
-    parser.add_argument('--pretrain_path', default=None, type=str,
+    parser.add_argument('--pretrain_path', default=None, type=Path,
                         help='Path to Pretrain weights') 
     parser.add_argument('--freeze_effnet', default=True, type=str2bool,
                         help='Path to Pretrain weights')  
     parser.add_argument('--final_pooling_type', default='Avg', type=str,
                         help='valid final pooling types are Avg,Max')                                                            
     parser.add_argument('--load_only_efficientNet',default = True,type =str2bool)  
-    parser.add_argument('--tag',default = "pretrain_big",type =str)                    
+    parser.add_argument('--tag',default = "pretrain_big",type =str)
+    parser.add_argument('--exp-dir',default='./exp/',type=Path,help="experiment root directory")    
+    parser.add_argument('--lr',default=0.001,type=float,help="experiment root directory")                    
     return parser
 
 

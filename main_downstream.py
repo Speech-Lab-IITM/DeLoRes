@@ -61,7 +61,10 @@ def main_worker(gpu, args):
     # models
     model = DownstreamClassifer(no_of_classes=train_dataset.no_of_classes,
                                 final_pooling_type=args.final_pooling_type).cuda(gpu)
-    
+
+    model = nn.SyncBatchNorm.convert_sync_batchnorm(model) 
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
+
     # Resume
     start_epoch =0 
     if args.resume:
@@ -74,9 +77,7 @@ def main_worker(gpu, args):
     # Freeze effnet
     if args.freeze_effnet:
         freeze_effnet(model)
-
-    model = nn.SyncBatchNorm.convert_sync_batchnorm(model) 
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
+    
     criterion = nn.CrossEntropyLoss().cuda(gpu)
     optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),

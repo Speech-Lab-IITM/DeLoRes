@@ -43,7 +43,7 @@ class IEMOCAPTest(Dataset):
         self.sample_rate = sample_rate
         self.labels_dict ={'neu':0, 'ang':1, 'sad':2, 'hap':3} 
         self.no_of_classes= len(self.labels_dict)
-        self._n_frames = 96 # * Taken from cola implementation equivalent to 980 milliseconds
+        self._n_frames = 96 # * Taken from cola implementation equivalent to 960 milliseconds
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -61,7 +61,7 @@ class IEMOCAPTest(Dataset):
         #                             frame_step=self._n_frames * 160,pad_end=True)
 
         #wave_audio_normalised = tf.math.l2_normalize(wave_audio_chopped, axis=-1, epsilon=1e-9)
-        
+
         extracted_logmel =[]
         for i in np.arange(wave_audio_chopped.shape[0]):
             wave_audio_normalised = f.normalize(wave_audio_chopped[i],dim=-1,p=2)

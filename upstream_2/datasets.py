@@ -36,23 +36,25 @@ def collate_fn_padd(batch):
 
 class BARLOW(Dataset):
 
-    def __init__(self, data_dir_list):
+    def __init__(self, data_dir_list,tfms):
         self.audio_files_list = data_dir_list
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __getitem__(self, idx):
         audio_file = self.audio_files_list[idx]
         wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
         wave = torch.tensor(wave)
-        x = f.normalize(wave,dim=-1,p=2)
+        x = f.normalize(wave,dim=-1,p=2) #l2 normalize
 
-        waveform_a = extract_window_torch(x)
-        log_mel_spec_a = extract_log_mel_spectrogram_torch(waveform_a, self.to_mel_spec)
+        waveform = extract_window_torch(x) #extract a window
+        log_mel_spec = extract_log_mel_spectrogram_torch(waveform, self.to_mel_spec) #convert to logmelspec
+        log_mel_spec = log_mel_spec.unsqueeze(0)
 
-        waveform_b = extract_window_torch(x)
-        log_mel_spec_b = extract_log_mel_spectrogram_torch(waveform_b, self.to_mel_spec)
+        if self.tfms:
+            lms = self.tfms(log_mel_spec) #do augmentations
 
-        return log_mel_spec_a , log_mel_spec_b
+        return lms
 
     def __len__(self):
         return len(self.audio_files_list)

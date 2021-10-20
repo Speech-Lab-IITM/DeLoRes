@@ -18,6 +18,7 @@ from specaugment import specaug
 from datasets import collate_fn_padd, BARLOW
 from models import AAAI_BARLOW
 from multi_proc import LARS, adjust_learning_rate
+from augmentations import MixupBYOLA, RandomResizeCrop
 
 list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
 list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
@@ -30,6 +31,19 @@ tf.config.set_visible_devices([], 'GPU')
 logging.basicConfig(filename='decar.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
+
+class AugmentationModule:
+    """BYOL-A augmentation module example, the same parameter with the paper."""
+
+    def __init__(self, size, epoch_samples, log_mixup_exp=True, mixup_ratio=0.4):
+        self.train_transform = nn.Sequential(
+            MixupBYOLA(ratio=mixup_ratio, log_mixup_exp=log_mixup_exp),
+            RandomResizeCrop(virtual_crop_scale=(1.0, 1.5), freq_scale=(0.6, 1.5), time_scale=(0.6, 1.5)),
+        )
+        print('Augmentations:', self.train_transform)
+
+    def __call__(self, x):
+        return self.train_transform(x), self.train_transform(x)
 
 def create_dir(directory):
     if not os.path.exists(directory):
@@ -70,14 +84,15 @@ def main(gpu, args):
                      weight_decay_filter=True,
                      lars_adaptation_filter=True)
 
-    train_dataset = BARLOW(list_of_files_directory)
+    tfms = AugmentationModule((64, 96), 2 * len(list_of_files_directory))
+    train_dataset = BARLOW(list_of_files_directory,tfms)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
     per_device_batch_size = args.batch_size // args.world_size
 
     loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=per_device_batch_size, num_workers=args.num_workers,
-        pin_memory=True, sampler=sampler, collate_fn = collate_fn_padd)
+        pin_memory=True, sampler=sampler)
 
     logger.info(model)
 

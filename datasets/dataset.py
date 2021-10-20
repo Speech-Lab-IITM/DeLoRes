@@ -1,9 +1,12 @@
 from datasets.iemocap import  IEMOCAPTest, IEMOCAPTrain
+from datasets.birdsong_dataset import BirdSongDatasetTrain, BirdSongDatasetTest
 import torch
 
 def get_dataset(downstream_task_name):
     if downstream_task_name == "birdsong_combined":
-        raise NotImplementedError         
+        return BirdSongDatasetTrain(), BirdSongDatasetTest()
+
+                 
     # elif downstream_task_name == "speech_commands_v1":
     #     return SpeechCommandsV1Train() , SpeechCommandsV1Test()
     # elif downstream_task_name == "speech_commands_v2":

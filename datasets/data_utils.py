@@ -19,7 +19,7 @@ def signal_to_frame(signal, frame_length, frame_step, pad_end=False, pad_value=0
         if pad_size != 0:
             pad_axis = [0] * signal.ndim
             pad_axis[axis] = pad_size
-            signal = f.pad(signal, (0,pad_axis[0]), "constant", pad_value)
+            signal = F.pad(signal, (0,pad_axis[0]), "constant", pad_value)
     frames=signal.unfold(axis, frame_length, frame_step)
     return frames
 

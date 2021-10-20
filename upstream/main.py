@@ -18,9 +18,9 @@ from specaugment import specaug
 from datasets import collate_fn_padd, BARLOW
 from models import AAAI_BARLOW
 from multi_proc import LARS, adjust_learning_rate
-
-list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
-list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
+import pandas as pd
+#list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
+#list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
 
 
 
@@ -50,8 +50,8 @@ def main(gpu, args):
         backend='nccl', init_method=args.dist_url,
         world_size=args.world_size, rank=args.rank)
 
-    #list_of_files_directory = pd.read_csv(args.input)
-    #list_of_files_directory = list(list_of_files_directory["files"])
+    list_of_files_directory = pd.read_csv(args.input)
+    list_of_files_directory = list(list_of_files_directory["files"])
 
     model = AAAI_BARLOW(args).cuda(gpu)
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)

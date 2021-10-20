@@ -62,7 +62,7 @@ def load_pretrain(path,model,
     checkpoint = torch.load(path)
     if load_only_effnet :
         for key in checkpoint['state_dict'].copy():
-            if not key.startswith('model_efficient'):
+            if not 'model_efficient' in key:
                 del checkpoint['state_dict'][key]
     mod_missing_keys,mod_unexpected_keys   = model.load_state_dict(checkpoint['state_dict'],strict=False)
     logger.info("Model missing keys")

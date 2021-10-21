@@ -18,7 +18,7 @@ from specaugment import specaug
 from datasets import collate_fn_padd, BARLOW
 from models import AAAI_BARLOW
 from multi_proc import LARS, adjust_learning_rate
-from augmentations import MixupBYOLA, RandomResizeCrop
+from augmentations import MixupBYOLA, RandomResizeCrop, RunningNorm
 
 list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
 list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
@@ -40,9 +40,11 @@ class AugmentationModule:
             MixupBYOLA(ratio=mixup_ratio, log_mixup_exp=log_mixup_exp),
             RandomResizeCrop(virtual_crop_scale=(1.0, 1.5), freq_scale=(0.6, 1.5), time_scale=(0.6, 1.5)),
         )
+        self.pre_norm = RunningNorm(epoch_samples=epoch_samples)
         print('Augmentations:', self.train_transform)
 
     def __call__(self, x):
+        x = self.pre_norm(x)
         return self.train_transform(x), self.train_transform(x)
 
 def create_dir(directory):

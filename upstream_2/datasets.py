@@ -45,9 +45,9 @@ class BARLOW(Dataset):
         audio_file = self.audio_files_list[idx]
         wave,sr = librosa.core.load(audio_file, sr=AUDIO_SR)
         wave = torch.tensor(wave)
-        x = f.normalize(wave,dim=-1,p=2) #l2 normalize
+        #x = f.normalize(wave,dim=-1,p=2) #l2 normalize
 
-        waveform = extract_window_torch(x) #extract a window
+        waveform = extract_window_torch(wave) #extract a window
         log_mel_spec = extract_log_mel_spectrogram_torch(waveform, self.to_mel_spec) #convert to logmelspec
         log_mel_spec = log_mel_spec.unsqueeze(0)
 

@@ -168,7 +168,7 @@ def train(args, loader, model, optimizer, epoch, gpu, scaler, stats_file):
 
         n = len(loader) * epoch + i
 
-        if n % 5000 == 0:
+        if n % 500 == 0:
             if args.rank == 0:
                 logger.info('Saving Checkpoint')
                 path = os.path.join(

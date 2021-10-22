@@ -174,7 +174,7 @@ def train(args, loader, model, optimizer, epoch, gpu, scaler, stats_file):
                 path = os.path.join(
                     args.save_dir,
                     'checkpoints',
-                    'checkpoint_' + str(n / 5000) + '.pth.tar',
+                    'checkpoint_' + str(n / 500) + '.pth.tar',
                 )
 
                 torch.save({

@@ -10,10 +10,13 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
+
 #random sample is taken from the whole audio frame
 complete_data = pd.read_csv("/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/birdsong/combined_data.csv")
 train, test = train_test_split(complete_data,test_size=0.2)
+
 class BirdSongDatasetTrain(Dataset):
+
     def __init__(self,sample_rate=16000):                
         self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/Bird_audio/"
         self.uttr_labels= train
@@ -37,6 +40,7 @@ class BirdSongDatasetTrain(Dataset):
 
 #audio is divided into chunks of 1sec and then tested
 class BirdSongDatasetTest(Dataset):
+    
     def __init__(self,sample_rate=16000):        
         self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/Bird_audio/"
         self.uttr_labels= test

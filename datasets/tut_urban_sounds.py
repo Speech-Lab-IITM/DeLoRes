@@ -10,9 +10,6 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-#random sample is taken from the whole audio frame
-#complete_data = pd.read_csv("/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/birdsong/combined_data.csv")
-#train, test = train_test_split(complete_data, test_size=0.2, random_state=1, stratify=complete_data['Label'])
 class TutUrbanSoundsTrain(Dataset):
     def __init__(self,sample_rate=16000):                
         self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
@@ -59,9 +56,6 @@ class TutUrbanSoundsTest(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        #wave_audio_chopped = tf.signal.frame(
-        #                            wave_audio,frame_length=self._n_frames * 160,
-        #                            frame_step=self._n_frames * 160,pad_end=True)
         wave_audio_chopped = signal_to_frame(wave_audio,frame_length=self._n_frames * 160,
                                     frame_step=self._n_frames * 160,pad_end=True)                             
         extracted_logmel =[]

@@ -1,5 +1,6 @@
 from datasets.iemocap import  IEMOCAPTest, IEMOCAPTrain
 from datasets.birdsong_dataset import BirdSongDatasetTrain, BirdSongDatasetTest
+from datasets.tut_urban_sounds import TutUrbanSoundsTrain, TutUrbanSoundsTest
 import torch
 
 def get_dataset(downstream_task_name):
@@ -17,8 +18,8 @@ def get_dataset(downstream_task_name):
     #     return MusicalInstrumentsDatasetTrain() , MusicalInstrumentsDatasetTest()
     elif downstream_task_name == "iemocap":
         return IEMOCAPTrain(),IEMOCAPTest()            
-    # elif downstream_task_name == "tut_urban": 
-    #     return TutUrbanSoundsTrain(),TutUrbanSoundsTest()    
+    elif downstream_task_name == "tut_urban":
+        return TutUrbanSoundsTrain(),TutUrbanSoundsTest()    
     # elif downstream_task_name == "voxceleb_v1":
     #     return Voxceleb1Train() , Voxceleb1DatasetTest()   
     # elif downstream_task_name == "language_identification":

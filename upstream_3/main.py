@@ -28,7 +28,7 @@ import pandas as pd
 AUDIO_SR = 16000
 tf.config.set_visible_devices([], 'GPU')
 
-logging.basicConfig(filename='decar.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='decar_l2.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -44,7 +44,7 @@ class AugmentationModule:
         print('Augmentations:', self.train_transform)
 
     def __call__(self, x):
-        x = self.pre_norm(x)
+        #x = self.pre_norm(x)
         return self.train_transform(x), self.train_transform(x)
 
 def create_dir(directory):

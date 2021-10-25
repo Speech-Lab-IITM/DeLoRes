@@ -5,7 +5,9 @@ import tensorflow as tf
 import numpy as np
 import random
 import torch.nn.functional as F
-
+import scipy
+from scipy.io import wavfile
+import audioread
 
 def signal_to_frame(signal, frame_length, frame_step, pad_end=False, pad_value=0, axis=-1):
     """
@@ -25,9 +27,9 @@ def signal_to_frame(signal, frame_length, frame_step, pad_end=False, pad_value=0
 
 
 
-def extract_window(wav, seg_length=16000):
-    """Extract random window of 1 second"""
-    unit_length = int(0.96 * 16000)
+def extract_window(wav, seg_length=16000, data_size=0.96):
+    """Extract random window of data_size second"""
+    unit_length = int(data_size * 16000)
     length_adj = unit_length - len(wav)
     if length_adj > 0:
         half_adj = length_adj // 2
@@ -58,6 +60,22 @@ def extract_log_mel_spectrogram(waveform, to_mel_spec):
 
     log_mel_spectrograms = (to_mel_spec(waveform) + torch.finfo().eps).log()
     return log_mel_spectrograms
+
+def get_avg_duration(data,root_path):
+    sum = 0
+    count = 0
+    for i in range(data.shape[0]):
+        sample_rate, data_val = wavfile.read(root_path+data.iloc[i,:]['AudioPath'])
+        sum+=(len(data_val)/sample_rate)
+        if len(data_val)/sample_rate < 10:
+            count+=1
+        #with audioread.audio_open(root_path+data.iloc[i,:]['AudioPath']) as f:
+        #    sum+=f.duration
+        #    if f.duration < 10.041642255202271:
+        #        count+=1
+    #print(count)
+    #print(data.shape[0])     
+    return int(sum/data.shape[0])
 
 
 class DataUtils():

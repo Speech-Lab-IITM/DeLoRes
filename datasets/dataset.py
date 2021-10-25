@@ -1,5 +1,5 @@
 from datasets.iemocap import  IEMOCAPTest, IEMOCAPTrain
-from datasets.birdsong_dataset import BirdSongDatasetTrain, BirdSongDatasetTest
+from datasets.birdsong_dataset_avg import BirdSongDatasetTrain, BirdSongDatasetTest
 from datasets.tut_urban_sounds import TutUrbanSoundsTrain, TutUrbanSoundsTest
 import torch
 

@@ -48,15 +48,16 @@ def main_worker(gpu, args):
     per_device_batch_size = args.batch_size // args.world_size
 
     train_dataset,test_dataset = get_dataset(args.down_stream_task)
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)    
+    
+    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, shuffle=True, seed=1)    
+    
     train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=per_device_batch_size,
                                                 collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True,sampler = train_sampler)
-    # ! not required just run things in one gpu else need to take care of reduce operations 
-    # test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
-    test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=1,
-                                                collate_fn = DataUtils.collate_fn_padd_eval,
-                                                pin_memory=True)  
+    
+    test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=args.batch_size,
+                                                collate_fn = DataUtils.collate_fn_padd_2,
+                                                pin_memory=True)
 
     # models
     model = DownstreamClassifer(no_of_classes=train_dataset.no_of_classes,
@@ -66,11 +67,12 @@ def main_worker(gpu, args):
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     # Resume
-    start_epoch =0 
+    start_epoch =0
     if args.resume:
         raise NotImplementedError
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
+        logger.info("pretrain Weights init")
         load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
     else:
         logger.info("Random Weights init")
@@ -168,8 +170,7 @@ def eval(epoch,model,loader,crit,args,gpu,stats_file):
                 input_tensor =input_tensor.cuda(gpu ,non_blocking=True)
                 targets = targets.cuda(gpu,non_blocking=True)
             with torch.cuda.amp.autocast():
-                outputs = model(input_tensor) # BS x nclasses 
-                outputs = torch.mean(outputs,dim=0,keepdim=True) # ! 1 x nclases :: averaging outputs 
+                outputs = model(input_tensor) 
                 loss = crit(outputs, targets)
                 preds = torch.argmax(outputs,dim=1)==targets
 

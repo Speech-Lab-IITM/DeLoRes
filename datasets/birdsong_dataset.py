@@ -53,9 +53,6 @@ class BirdSongDatasetTest(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        #wave_audio_chopped = tf.signal.frame(
-        #                            wave_audio,frame_length=self._n_frames * 160,
-        #                            frame_step=self._n_frames * 160,pad_end=True)
         wave_audio_chopped = signal_to_frame(wave_audio,frame_length=self._n_frames * 160,
                                     frame_step=self._n_frames * 160,pad_end=True)                             
         extracted_logmel =[]

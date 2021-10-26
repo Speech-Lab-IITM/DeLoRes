@@ -10,18 +10,15 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-#random sample is taken from the whole audio frame
-complete_data = pd.read_csv("/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/birdsong/combined_data.csv")
-duration = 10
+duration = 1
 print(duration,'duration')
-train, test = train_test_split(complete_data, test_size=0.2, random_state=1, stratify=complete_data['Label'])
-
-class BirdSongDatasetTrain(Dataset):
+class SpeechCommandsV2Train(Dataset):
     def __init__(self,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/Bird_audio/"
-        self.uttr_labels= train
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
+        self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
-        self.no_of_classes = 2
+        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
+        self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -36,14 +33,15 @@ class BirdSongDatasetTrain(Dataset):
         wave_random1sec = extract_window(wave_normalised,data_size=duration)
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
         label = row['Label']
-        return uttr_melspec, label
+        return uttr_melspec, self.labels_dict[label]
 
-class BirdSongDatasetTest(Dataset):
+class SpeechCommandsV2Test(Dataset):
     def __init__(self,sample_rate=16000):        
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/Bird_audio/"
-        self.uttr_labels= test
+        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
+        self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
-        self.no_of_classes = 2
+        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
+        self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -58,5 +56,4 @@ class BirdSongDatasetTest(Dataset):
         wave_random1sec = extract_window(wave_normalised,data_size=duration)
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
         label = row['Label']
-        return uttr_melspec, label
-        
+        return uttr_melspec, self.labels_dict[label]

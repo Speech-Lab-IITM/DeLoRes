@@ -157,7 +157,7 @@ class AverageMeter(object):
 
 #-------------------------------------------------------------------------------------#
 
-def calc_norm_stats(cfg, data_src, n_stats=10000):
+def calc_norm_stats(train_dataset, test_dataset, n_stats=50000):
     """Calculates statistics of log-mel spectrogram features in a data source for normalization.
     Args:
         cfg: Configuration settings.
@@ -173,12 +173,22 @@ def calc_norm_stats(cfg, data_src, n_stats=10000):
     #     return data_src.subset([0])
 
     # stats_data = data_for_stats(data_src)
-    n_stats = min(n_stats, len(stats_data))
+
+    train_files = os.listdir(train_dataset.feat_root)
+    test_files = os.listdir(test_dataset.feat_root)
+
+    n_stats = min(n_stats, len(train_files + test_files))
+    n_stats_train = int(n_stats * (len(train_files) / len(train_files + test_files)))
+    n_stats_test = int(n_stats * (len(test_files) / len(train_files + test_files)))
+
     logging.info(f'Calculating mean/std using random {n_stats} samples from training population {len(stats_data)} samples...')
-    sample_idxes = np.random.choice(range(len(stats_data)), size=n_stats, replace=False)
-    ds = WaveInLMSOutDataset(cfg, stats_data.files, labels=None, tfms=None)
-    X = [ds[i] for i in tqdm(sample_idxes)]
+
+    sample_idxes_train = np.random.choice(range(len(train_files)), size=n_stats_train, replace=False)
+    sample_idxes_test = np.random.choice(range(len(test_files)), size=n_stats_test, replace=False)
+
+    X = [train_dataset[i] for i in tqdm(sample_idxes_train)] + [test_dataset[i] for i in tqdm(sample_idxes_test)]
     X = np.hstack(X)
+
     norm_stats = np.array([X.mean(), X.std()])
     logging.info(f'  ==> mean/std: {norm_stats}, {norm_stats.shape} <- {X.shape}')
     return norm_stats

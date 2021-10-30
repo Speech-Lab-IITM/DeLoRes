@@ -154,3 +154,31 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
+#-------------------------------------------------------------------------------------#
+
+def calc_norm_stats(cfg, data_src, n_stats=10000):
+    """Calculates statistics of log-mel spectrogram features in a data source for normalization.
+    Args:
+        cfg: Configuration settings.
+        data_src: Data source class object.
+        n_stats: Maximum number of files to calculate statistics.
+    """
+
+    # def data_for_stats(data_src):
+    #     # use all files for LOO-CV (Leave One Out CV)
+    #     if data_src.loocv:
+    #         return data_src
+    #     # use training samples only for non-LOOCV (train/eval/test) split.
+    #     return data_src.subset([0])
+
+    # stats_data = data_for_stats(data_src)
+    n_stats = min(n_stats, len(stats_data))
+    logging.info(f'Calculating mean/std using random {n_stats} samples from training population {len(stats_data)} samples...')
+    sample_idxes = np.random.choice(range(len(stats_data)), size=n_stats, replace=False)
+    ds = WaveInLMSOutDataset(cfg, stats_data.files, labels=None, tfms=None)
+    X = [ds[i] for i in tqdm(sample_idxes)]
+    X = np.hstack(X)
+    norm_stats = np.array([X.mean(), X.std()])
+    logging.info(f'  ==> mean/std: {norm_stats}, {norm_stats.shape} <- {X.shape}')
+    return norm_stats

@@ -233,5 +233,7 @@ def get_upstream_parser():
                         help='lambda for off diagonal loss')
     parser.add_argument('--input', type=str, required = True, 
                         help='Input CSV with all file paths under column named files')
+    parser.add_argument('--use_model', type=str, required = True, 
+                        help='Which model to use')
   
     return parser

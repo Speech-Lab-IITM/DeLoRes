@@ -11,6 +11,7 @@ import torch
 import tensorflow as tf
 import logging
 from torch import nn
+import pandas as pd
 
 
 from utils import extract_log_mel_spectrogram, compute_features, get_upstream_parser, AverageMeter, UnifLabelSampler, Logger
@@ -19,11 +20,10 @@ from datasets import collate_fn_padd, BARLOW
 from models import AAAI_BARLOW
 from multi_proc import LARS, adjust_learning_rate
 from augmentations import MixupBYOLA, RandomResizeCrop, RunningNorm
-import pandas as pd
+from models_byol import AudioNTT2020
+
 #list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
 #list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
-
-
 
 AUDIO_SR = 16000
 tf.config.set_visible_devices([], 'GPU')
@@ -69,7 +69,11 @@ def main(gpu, args):
     list_of_files_directory = pd.read_csv(args.input)
     list_of_files_directory = list(list_of_files_directory["files"])
 
-    model = AAAI_BARLOW(args).cuda(gpu)
+    if args.use_model == 'effnet':
+        model = AAAI_BARLOW(args).cuda(gpu)
+    elif args.use_model == 'byol':
+        model = AudioNTT2020(args, n_mels=64, d=512).cuda(gpu)
+
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     param_biases = []

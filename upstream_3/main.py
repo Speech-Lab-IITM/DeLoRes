@@ -73,7 +73,7 @@ def main(gpu, args):
     if args.use_model == 'effnet':
         model = AAAI_BARLOW(args).cuda(gpu)
     elif args.use_model == 'byol':
-        model = AudioNTT2020(args, n_mels=64, d=512).cuda(gpu)
+        model = AudioNTT2020(args, n_mels=64, d=2048).cuda(gpu)
 
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 

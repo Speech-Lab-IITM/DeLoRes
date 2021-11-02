@@ -74,7 +74,7 @@ def main(gpu, args):
                      weight_decay_filter=True,
                      lars_adaptation_filter=True)
 
-    train_dataset = BARLOW(list_of_files_directory,args)
+    train_dataset = BARLOW(args, list_of_files_directory)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
     per_device_batch_size = args.batch_size // args.world_size

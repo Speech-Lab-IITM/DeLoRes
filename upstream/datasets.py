@@ -36,7 +36,7 @@ def collate_fn_padd(batch):
 
 class BARLOW(Dataset):
 
-    def __init__(self, data_dir_list, args):
+    def __init__(self, args, data_dir_list):
         self.audio_files_list = data_dir_list
         self.to_mel_spec = MelSpectrogramLibrosa()
         self.length = args.length_wave

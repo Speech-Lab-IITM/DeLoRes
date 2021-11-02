@@ -86,7 +86,7 @@ class AudioNTT2020(AudioNTT2020Task6):
         super().__init__(n_mels=n_mels, d=d)
         self.args = args
         self.units = args.final_units
-        self.projector = nn.Sequential(nn.Dropout(0.5),nn.Linear(512, self.units, bias=False),nn.BatchNorm1d(self.units),nn.ReLU(),nn.Linear(self.units, self.units, bias = False))
+        self.projector = nn.Sequential(nn.Dropout(0.5),nn.Linear(2048, self.units, bias=False),nn.BatchNorm1d(self.units),nn.ReLU(),nn.Linear(self.units, self.units, bias = False))
         self.bn = nn.BatchNorm1d(self.units, affine=False)
 
     def forward(self, batch1, batch2):

@@ -53,7 +53,11 @@ def main(gpu, args):
     list_of_files_directory = pd.read_csv(args.input)
     list_of_files_directory = list(list_of_files_directory["files"])
 
-    model = AAAI_BARLOW(args).cuda(gpu)
+    if args.use_model == 'effnet':
+        model = AAAI_BARLOW(args).cuda(gpu)
+    elif args.use_model == 'byol':
+        model = AudioNTT2020(args, n_mels=64, d=2048).cuda(gpu)
+    
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     param_biases = []
@@ -70,7 +74,7 @@ def main(gpu, args):
                      weight_decay_filter=True,
                      lars_adaptation_filter=True)
 
-    train_dataset = BARLOW(list_of_files_directory)
+    train_dataset = BARLOW(args, list_of_files_directory)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
     per_device_batch_size = args.batch_size // args.world_size
@@ -211,9 +215,9 @@ if __name__== "__main__":
 
     args.rank = 0
     args.dist_url = 'tcp://localhost:58472'
-    args.world_size = 4
+    args.world_size = 2
 
-    torch.multiprocessing.spawn(main, (args,), 4)
+    torch.multiprocessing.spawn(main, (args,), 2)
 
     #main(args)
 

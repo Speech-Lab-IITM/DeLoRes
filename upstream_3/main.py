@@ -11,6 +11,7 @@ import torch
 import tensorflow as tf
 import logging
 from torch import nn
+import pandas as pd
 
 
 from utils import extract_log_mel_spectrogram, compute_features, get_upstream_parser, AverageMeter, UnifLabelSampler, Logger
@@ -19,32 +20,32 @@ from datasets import collate_fn_padd, BARLOW
 from models import AAAI_BARLOW
 from multi_proc import LARS, adjust_learning_rate
 from augmentations import MixupBYOLA, RandomResizeCrop, RunningNorm
-import pandas as pd
+from models_byol import AudioNTT2020
+
 #list_of_files_directory_1 = os.listdir("/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/")
 #list_of_files_directory = ["/speech/srayan/icassp/kaggle_data/audioset_train/train_wav/" + item for item in list_of_files_directory_1]
-
-
 
 AUDIO_SR = 16000
 tf.config.set_visible_devices([], 'GPU')
 
-logging.basicConfig(filename='decar_l2.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='decar_l2_l2.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
 
 class AugmentationModule:
     """BYOL-A augmentation module example, the same parameter with the paper."""
 
-    def __init__(self, size, epoch_samples, log_mixup_exp=True, mixup_ratio=0.4):
+    def __init__(self, args, size, epoch_samples, log_mixup_exp=True, mixup_ratio=0.4):
         self.train_transform = nn.Sequential(
             MixupBYOLA(ratio=mixup_ratio, log_mixup_exp=log_mixup_exp),
             RandomResizeCrop(virtual_crop_scale=(1.0, 1.5), freq_scale=(0.6, 1.5), time_scale=(0.6, 1.5)),
         )
         self.pre_norm = RunningNorm(epoch_samples=epoch_samples)
         print('Augmentations:', self.train_transform)
-
+        self.norm_status = args.use_norm
     def __call__(self, x):
-        #x = self.pre_norm(x)
+        if self.norm_status == "byol":
+            x = self.pre_norm(x)
         return self.train_transform(x), self.train_transform(x)
 
 def create_dir(directory):
@@ -69,7 +70,11 @@ def main(gpu, args):
     list_of_files_directory = pd.read_csv(args.input)
     list_of_files_directory = list(list_of_files_directory["files"])
 
-    model = AAAI_BARLOW(args).cuda(gpu)
+    if args.use_model == 'effnet':
+        model = AAAI_BARLOW(args).cuda(gpu)
+    elif args.use_model == 'byol':
+        model = AudioNTT2020(args, n_mels=64, d=2048).cuda(gpu)
+
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     param_biases = []
@@ -86,8 +91,8 @@ def main(gpu, args):
                      weight_decay_filter=True,
                      lars_adaptation_filter=True)
 
-    tfms = AugmentationModule((64, 96), 2 * len(list_of_files_directory))
-    train_dataset = BARLOW(list_of_files_directory,tfms)
+    tfms = AugmentationModule(args, (64, 96), 2 * len(list_of_files_directory))
+    train_dataset = BARLOW(args, list_of_files_directory, tfms)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
     per_device_batch_size = args.batch_size // args.world_size
@@ -228,9 +233,9 @@ if __name__== "__main__":
 
     args.rank = 0
     args.dist_url = 'tcp://localhost:58472'
-    args.world_size = 4
+    args.world_size = 2
 
-    torch.multiprocessing.spawn(main, (args,), 4)
+    torch.multiprocessing.spawn(main, (args,), 2)
 
     #main(args)
 

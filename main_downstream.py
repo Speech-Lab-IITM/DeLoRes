@@ -11,7 +11,7 @@ from datasets.data_utils import DataUtils
 from datasets.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
 from byol.model import AudioNTT2020
-from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain,calc_norm_stats) #resume_from_checkpoint, save_to_checkpoint,set_seed
+from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain,calc_norm_stats,load_pretrain_byol) #resume_from_checkpoint, save_to_checkpoint,set_seed
 from augmentations import PrecomputedNorm
 
 def get_logger(args):
@@ -70,6 +70,9 @@ def main_worker(gpu, args):
     #    freeze_effnet(model)
 
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    if args.freeze_effnet:
+        freeze_effnet(model)
+
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu], find_unused_parameters=True) #I have to use this (find_unused_parameters=Ture)
 
     # Resume
@@ -79,7 +82,7 @@ def main_worker(gpu, args):
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
         logger.info("pretrain Weights init")
-        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet) #this function also uses freeze code
+        load_pretrain_byol(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet) #this function also uses freeze code
     else:
         logger.info("Random Weights init")
 

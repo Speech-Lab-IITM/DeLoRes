@@ -85,7 +85,7 @@ class AudioNTT2020(AudioNTT2020Task6):
     def __init__(self, args, n_mels=64, d=512, no_of_classes=1):
         super().__init__(n_mels=n_mels, d=d)
         self.args = args
-        self.fc = nn.Linear(d,no_of_classes)
+        self.final = nn.Linear(d,no_of_classes)
 
     def forward(self, x):
         x = super().forward(x)
@@ -93,5 +93,5 @@ class AudioNTT2020(AudioNTT2020Task6):
         x2 = torch.mean(x, dim=1)
         x = x1 + x2
         assert x.shape[1] == self.d and x.ndim == 2
-        output = self.fc(x)
+        output = self.final(x)
         return output

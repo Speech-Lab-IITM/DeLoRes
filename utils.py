@@ -46,15 +46,16 @@ def get_downstream_parser():
     parser.add_argument('--tag',default = "pretrain_big",type =str)
     parser.add_argument('--exp-dir',default='./exp/',type=Path,help="experiment root directory")    
     parser.add_argument('--lr',default=0.001,type=float,help="experiment root directory")
-    parser.add_argument('--final_units', type=int, required = True, 
-                        help='Number of units in prediction head')                    
+                   
     return parser
 
 
 def freeze_effnet(model):
     logger=logging.getLogger("__main__")
     logger.info("freezing effnet weights")
-    for param in model.model_efficient.parameters():
+    for param in model.features.parameters():
+        param.requires_grad = False
+    for param in model.fc.parameters():
         param.requires_grad = False
 
 def load_pretrain(path,model,
@@ -64,7 +65,7 @@ def load_pretrain(path,model,
     checkpoint = torch.load(path)
     if load_only_effnet :
         for key in checkpoint['state_dict'].copy():
-            if not 'model_efficient' in key:
+            if ('features' not in key) and ('fc' not in key):
                 del checkpoint['state_dict'][key]
     mod_missing_keys,mod_unexpected_keys   = model.load_state_dict(checkpoint['state_dict'],strict=False)
     logger.info("Model missing keys")
@@ -73,10 +74,10 @@ def load_pretrain(path,model,
     logger.info("Model unexpected keys")
     logger.info(mod_unexpected_keys)
     print(mod_unexpected_keys)
-    if freeze_effnet : 
-        logger.info("freezing effnet weights")
-        for param in model.model_efficient.parameters():
-            param.requires_grad = False
+    # if freeze_effnet : 
+    #     logger.info("freezing effnet weights")
+    #     for param in model.model_efficient.parameters():
+    #         param.requires_grad = False
     logger.info("done loading")
     return model
 
@@ -87,7 +88,7 @@ def load_pretrain_byol(path,model,
     checkpoint = torch.load(path)
     if load_only_effnet :
         for key in checkpoint['state_dict'].copy():
-            if not 'model_efficient' in key:
+            if not ('features' or 'fc') in key:
                 del checkpoint['state_dict'][key]
     mod_missing_keys,mod_unexpected_keys   = model.load_state_dict(checkpoint['state_dict'],strict=False)
     logger.info("Model missing keys")

@@ -10,6 +10,7 @@ import sys
 from datasets.data_utils import DataUtils
 from datasets.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
+from byol.model import AudioNTT2020
 from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain,calc_norm_stats) #resume_from_checkpoint, save_to_checkpoint,set_seed
 from augmentations import PrecomputedNorm
 
@@ -63,8 +64,7 @@ def main_worker(gpu, args):
                                                 pin_memory=True)
 
     # models
-    model = DownstreamClassifer(no_of_classes=train_dataset.no_of_classes,
-                                final_pooling_type=args.final_pooling_type).cuda(gpu)
+    model = AudioNTT2020(args, n_mels=64, d=2048, no_of_classes=train_dataset.no_of_classes).cuda(gpu)
 
     #if args.freeze_effnet:
     #    freeze_effnet(model)
@@ -82,9 +82,11 @@ def main_worker(gpu, args):
         load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet) #this function also uses freeze code
     else:
         logger.info("Random Weights init")
+
     # Freeze effnet
     #if args.freeze_effnet:
     #    freeze_effnet(model)
+    
     criterion = nn.CrossEntropyLoss().cuda(gpu)
     optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),

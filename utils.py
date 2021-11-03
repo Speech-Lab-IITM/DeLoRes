@@ -45,7 +45,9 @@ def get_downstream_parser():
     parser.add_argument('--load_only_efficientNet',default = True,type =str2bool)  
     parser.add_argument('--tag',default = "pretrain_big",type =str)
     parser.add_argument('--exp-dir',default='./exp/',type=Path,help="experiment root directory")    
-    parser.add_argument('--lr',default=0.001,type=float,help="experiment root directory")                    
+    parser.add_argument('--lr',default=0.001,type=float,help="experiment root directory")
+    parser.add_argument('--final_units', type=int, required = True, 
+                        help='Number of units in prediction head')                    
     return parser
 
 
@@ -56,6 +58,29 @@ def freeze_effnet(model):
         param.requires_grad = False
 
 def load_pretrain(path,model,
+                load_only_effnet=False,freeze_effnet=False):
+    logger=logging.getLogger("__main__")
+    logger.info("loading from checkpoint only weights : "+ str(path))
+    checkpoint = torch.load(path)
+    if load_only_effnet :
+        for key in checkpoint['state_dict'].copy():
+            if not 'model_efficient' in key:
+                del checkpoint['state_dict'][key]
+    mod_missing_keys,mod_unexpected_keys   = model.load_state_dict(checkpoint['state_dict'],strict=False)
+    logger.info("Model missing keys")
+    logger.info(mod_missing_keys)
+    print(mod_missing_keys)
+    logger.info("Model unexpected keys")
+    logger.info(mod_unexpected_keys)
+    print(mod_unexpected_keys)
+    if freeze_effnet : 
+        logger.info("freezing effnet weights")
+        for param in model.model_efficient.parameters():
+            param.requires_grad = False
+    logger.info("done loading")
+    return model
+
+def load_pretrain_byol(path,model,
                 load_only_effnet=False,freeze_effnet=False):
     logger=logging.getLogger("__main__")
     logger.info("loading from checkpoint only weights : "+ str(path))

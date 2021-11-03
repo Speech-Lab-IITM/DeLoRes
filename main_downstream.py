@@ -10,7 +10,8 @@ import sys
 from datasets.data_utils import DataUtils
 from datasets.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
-from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain)#resume_from_checkpoint, save_to_checkpoint,set_seed
+from byol.model import AudioNTT2020
+from utils import (AverageMeter,Metric,freeze_effnet,freeze_byol,get_downstream_parser,load_pretrain_effnet,load_pretrain_byol) #resume_from_checkpoint, save_to_checkpoint,set_seed
 
 def get_logger(args):
     logger = logging.getLogger(__name__)
@@ -60,15 +61,24 @@ def main_worker(gpu, args):
                                                 pin_memory=True)
 
     # models
-    model = DownstreamClassifer(no_of_classes=train_dataset.no_of_classes,
+    if args.use_model == "effnet":
+        model = DownstreamClassifer(no_of_classes=train_dataset.no_of_classes,
                                 final_pooling_type=args.final_pooling_type).cuda(gpu)
+    elif args.use_model == "byol":
+        model = AudioNTT2020(args, n_mels=64, d=2048, no_of_classes=train_dataset.no_of_classes).cuda(gpu)
+    else:
+        raise NotImplementedError
+        sys.exit(0)
 
-    #if args.freeze_effnet:
-    #    freeze_effnet(model)
 
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    if args.freeze_effnet:
-        freeze_effnet(model)
+
+    if args.freeze:
+        if args.use_model == "effnet":
+            freeze_effnet(model)
+        elif args.use_model == "byol":
+            freeze_byol(model)
+    
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     # Resume
@@ -78,12 +88,13 @@ def main_worker(gpu, args):
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
         logger.info("pretrain Weights init")
-        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
+        if args.use_model == "effnet":
+            load_pretrain_effnet(args.pretrain_path,model,args.load_only_encoder)
+        elif args.use_model == "byol":
+            load_pretrain_byol(args.pretrain_path,model,args.load_only_encoder)
     else:
         logger.info("Random Weights init")
-    # Freeze effnet
-    #if args.freeze_effnet:
-    #    freeze_effnet(model)
+
     criterion = nn.CrossEntropyLoss().cuda(gpu)
     optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),

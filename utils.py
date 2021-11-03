@@ -38,14 +38,16 @@ def get_downstream_parser():
                         help='number of total epochs to run')
     parser.add_argument('--pretrain_path', default=None, type=Path,
                         help='Path to Pretrain weights')
-    parser.add_argument('--freeze_effnet', default=True, type=str2bool,
+    parser.add_argument('--freeze', default=True, type=str2bool,
                         help='Path to Pretrain weights')
     parser.add_argument('--final_pooling_type', default='Avg', type=str,
                         help='valid final pooling types are Avg,Max')
-    parser.add_argument('--load_only_efficientNet',default = True,type =str2bool)
+    parser.add_argument('--load_only_encoder',default = True,type =str2bool)
     parser.add_argument('--tag',default = "pretrain_big",type =str)
     parser.add_argument('--exp-dir',default='./exp/',type=Path,help="experiment root directory")
     parser.add_argument('--lr',default=0.001,type=float,help="experiment root directory")
+    parser.add_argument('--use_model', default='effnet', type=str,
+                        help='Which model to use?')
     return parser
 
 
@@ -55,8 +57,16 @@ def freeze_effnet(model):
     for param in model.model_efficient.parameters():
         param.requires_grad = False
 
-def load_pretrain(path,model,
-                load_only_effnet=False,freeze_effnet=False):
+def freeze_byol(model):
+    logger=logging.getLogger("__main__")
+    logger.info("freezing effnet weights")
+    for param in model.features.parameters():
+        param.requires_grad = False
+    for param in model.fc.parameters():
+        param.requires_grad = False
+
+def load_pretrain_effnet(path,model,
+                load_only_effnet=False):
     logger=logging.getLogger("__main__")
     logger.info("loading from checkpoint only weights : "+ str(path))
     checkpoint = torch.load(path)
@@ -71,11 +81,25 @@ def load_pretrain(path,model,
     logger.info("Model unexpected keys")
     logger.info(mod_unexpected_keys)
     print(mod_unexpected_keys)
-   # if freeze_effnet :
-   #     print('freeze')
-   #     logger.info("freezing effnet weights")
-   #     for param in model.module.model_efficient.parameters():
-   #         param.requires_grad = False
+    logger.info("done loading")
+    return model
+
+def load_pretrain_byol(path,model,
+                load_only_effnet=False):
+    logger=logging.getLogger("__main__")
+    logger.info("loading from checkpoint only weights : "+ str(path))
+    checkpoint = torch.load(path)
+    if load_only_effnet :
+        for key in checkpoint['state_dict'].copy():
+            if ('features' not in key) and ('fc' not in key):
+                del checkpoint['state_dict'][key]
+    mod_missing_keys,mod_unexpected_keys   = model.load_state_dict(checkpoint['state_dict'],strict=False)
+    logger.info("Model missing keys")
+    logger.info(mod_missing_keys)
+    print(mod_missing_keys)
+    logger.info("Model unexpected keys")
+    logger.info(mod_unexpected_keys)
+    print(mod_unexpected_keys)
     logger.info("done loading")
     return model
 

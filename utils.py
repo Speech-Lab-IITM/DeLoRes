@@ -52,7 +52,7 @@ def get_downstream_parser():
 def freeze_effnet(model):
     logger=logging.getLogger("__main__")
     logger.info("freezing effnet weights")
-    for param in model.module.model_efficient.parameters():
+    for param in model.model_efficient.parameters():
         param.requires_grad = False
 
 def load_pretrain(path,model,
@@ -71,11 +71,11 @@ def load_pretrain(path,model,
     logger.info("Model unexpected keys")
     logger.info(mod_unexpected_keys)
     print(mod_unexpected_keys)
-    if freeze_effnet :
-        print('freeze')
-        logger.info("freezing effnet weights")
-        for param in model.module.model_efficient.parameters():
-            param.requires_grad = False
+   # if freeze_effnet :
+   #     print('freeze')
+   #     logger.info("freezing effnet weights")
+   #     for param in model.module.model_efficient.parameters():
+   #         param.requires_grad = False
     logger.info("done loading")
     return model
 

@@ -67,7 +67,9 @@ def main_worker(gpu, args):
     #    freeze_effnet(model)
 
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu], find_unused_parameters=True) #I have to use this (find_unused_parameters=Ture)
+    if args.freeze_effnet:
+        freeze_effnet(model)
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     # Resume
     start_epoch =0
@@ -76,7 +78,7 @@ def main_worker(gpu, args):
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
         logger.info("pretrain Weights init")
-        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet) #this function also uses freeze code
+        load_pretrain(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet)
     else:
         logger.info("Random Weights init")
     # Freeze effnet

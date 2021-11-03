@@ -10,7 +10,7 @@ import sys
 from datasets.data_utils import DataUtils
 from datasets.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
-from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain) #resume_from_checkpoint, save_to_checkpoint,set_seed
+from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain,calc_norm_stats) #resume_from_checkpoint, save_to_checkpoint,set_seed
 from augmentations import PrecomputedNorm
 
 def get_logger(args):
@@ -57,11 +57,9 @@ def main_worker(gpu, args):
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, shuffle=True, seed=1)
 
     train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=per_device_batch_size,
-                                                collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True,sampler = train_sampler)
 
     test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=args.batch_size,
-                                                collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)
 
     # models

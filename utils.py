@@ -3,7 +3,7 @@ import logging
 import os
 import random
 from pathlib import Path
-
+from tqdm import tqdm
 import numpy as np
 import torch
 
@@ -181,12 +181,11 @@ def calc_norm_stats(train_dataset, test_dataset, n_stats=50000):
     n_stats_train = int(n_stats * (len(train_files) / len(train_files + test_files)))
     n_stats_test = int(n_stats * (len(test_files) / len(train_files + test_files)))
 
-    logging.info(f'Calculating mean/std using random {n_stats} samples from training population {len(stats_data)} samples...')
+   # logging.info(f'Calculating mean/std using random {n_stats} samples from training population {len(stats_data)} samples...')
 
     sample_idxes_train = np.random.choice(range(len(train_files)), size=n_stats_train, replace=False)
     sample_idxes_test = np.random.choice(range(len(test_files)), size=n_stats_test, replace=False)
-
-    X = [train_dataset[i] for i in tqdm(sample_idxes_train)] + [test_dataset[i] for i in tqdm(sample_idxes_test)]
+    X = [train_dataset[i][0].numpy() for i in tqdm(sample_idxes_train)] + [test_dataset[i][0].numpy() for i in tqdm(sample_idxes_test)]
     X = np.hstack(X)
 
     norm_stats = np.array([X.mean(), X.std()])

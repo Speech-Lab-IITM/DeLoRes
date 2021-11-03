@@ -35,14 +35,14 @@ class TutUrbanSoundsTrain(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        wave_random1sec = extract_window(wave_normalised,data_size=duration)
+        wave_random1sec = extract_window(wave_audio,data_size=duration)
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
 
         if self.tfms:
             uttr_melspec = self.tfms(uttr_melspec)
 
         label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+        return uttr_melspec.unsqueeze(0), self.labels_dict[label]
 
 class TutUrbanSoundsTest(Dataset):
 
@@ -66,7 +66,7 @@ class TutUrbanSoundsTest(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        wave_random1sec = extract_window(wave_normalised,data_size=duration)
+        wave_random1sec = extract_window(wave_audio,data_size=duration)
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
 
         if self.tfms:
@@ -74,4 +74,4 @@ class TutUrbanSoundsTest(Dataset):
 
 
         label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+        return uttr_melspec.unsqueeze(0), self.labels_dict[label]

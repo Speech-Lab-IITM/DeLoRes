@@ -70,6 +70,11 @@ def main(gpu, args):
     list_of_files_directory = pd.read_csv(args.input)
     list_of_files_directory = list(list_of_files_directory["files"])
 
+    if (args.norm_status == "byol") or (args.norm_status == "l2"):
+        pass
+    else:
+        sys.exit(0)
+
     if args.use_model == 'effnet':
         model = AAAI_BARLOW(args).cuda(gpu)
     elif args.use_model == 'byol':

@@ -3,7 +3,7 @@ import logging
 import os
 import random
 from pathlib import Path
-
+from tqdm import tqdm
 import numpy as np
 import torch
 
@@ -48,6 +48,8 @@ def get_downstream_parser():
     parser.add_argument('--lr',default=0.001,type=float,help="experiment root directory")
     parser.add_argument('--use_model', default='effnet', type=str,
                         help='Which model to use?')
+    parser.add_argument('--norm', default='l2', type=str,
+                        help='Which norm to use?')
     return parser
 
 
@@ -178,3 +180,38 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+def calc_norm_stats(train_dataset, test_dataset, n_stats=50000):
+    """Calculates statistics of log-mel spectrogram features in a data source for normalization.
+    Args:
+        cfg: Configuration settings.
+        data_src: Data source class object.
+        n_stats: Maximum number of files to calculate statistics.
+    """
+
+    # def data_for_stats(data_src):
+    #     # use all files for LOO-CV (Leave One Out CV)
+    #     if data_src.loocv:
+    #         return data_src
+    #     # use training samples only for non-LOOCV (train/eval/test) split.
+    #     return data_src.subset([0])
+
+    # stats_data = data_for_stats(data_src)
+
+    train_files = os.listdir(train_dataset.feat_root)
+    test_files = os.listdir(test_dataset.feat_root)
+
+    n_stats = min(n_stats, len(train_files + test_files))
+    n_stats_train = int(n_stats * (len(train_files) / len(train_files + test_files)))
+    n_stats_test = int(n_stats * (len(test_files) / len(train_files + test_files)))
+
+   # logging.info(f'Calculating mean/std using random {n_stats} samples from training population {len(stats_data)} samples...')
+
+    sample_idxes_train = np.random.choice(range(len(train_files)), size=n_stats_train, replace=False)
+    sample_idxes_test = np.random.choice(range(len(test_files)), size=n_stats_test, replace=False)
+    X = [train_dataset[i][0].numpy() for i in tqdm(sample_idxes_train)] + [test_dataset[i][0].numpy() for i in tqdm(sample_idxes_test)]
+    X = np.hstack(X)
+
+    norm_stats = np.array([X.mean(), X.std()])
+    logging.info(f'  ==> mean/std: {norm_stats}, {norm_stats.shape} <- {X.shape}')
+    return norm_stats

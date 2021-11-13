@@ -10,14 +10,16 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-duration = 1
+duration = 9
 print(duration,'duration')
-class SpeechCommandsV1Train(Dataset):
+class TutUrbanSoundsTrain(Dataset):
     def __init__(self,tfms=None,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv1/train/"
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
+        self.labels_dict = {'airport': 0, 'bus': 1, 'metro': 2, 'metro_station': 3, 'park': 4,
+         'public_square': 5, 'shopping_mall': 6, 'street_pedestrian': 7,
+         'street_traffic': 8, 'tram': 9}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
 
@@ -40,12 +42,14 @@ class SpeechCommandsV1Train(Dataset):
 
         return uttr_melspec, self.labels_dict[label] #return normalized
 
-class SpeechCommandsV1Test(Dataset):
+class TutUrbanSoundsTest(Dataset):
     def __init__(self,tfms=None,sample_rate=16000):        
-        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv1/train/"
+        self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
+        self.labels_dict = {'airport': 0, 'bus': 1, 'metro': 2, 'metro_station': 3, 'park': 4,
+         'public_square': 5, 'shopping_mall': 6, 'street_pedestrian': 7,
+         'street_traffic': 8, 'tram': 9}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
 

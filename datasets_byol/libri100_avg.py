@@ -15,7 +15,7 @@ duration = 12
 print(duration,'duration')
 
 class Libri100Train(Dataset):
-    def __init__(self,sample_rate=16000):                
+    def __init__(self,tfms=None,sample_rate=16000):                
         self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/libri100/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
@@ -37,12 +37,12 @@ class Libri100Train(Dataset):
         if self.tfms:
             uttr_melspec=self.tfms(uttr_melspec) #if tfms present, normalize it
 
-        label = row['label']
+        label = row['Label_id']
 
         return uttr_melspec, label #return normalized
 
 class Libri100Test(Dataset):
-    def __init__(self,sample_rate=16000):        
+    def __init__(self,tfms=None,sample_rate=16000):        
         self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/libri100/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
@@ -64,6 +64,6 @@ class Libri100Test(Dataset):
         if self.tfms:
             uttr_melspec=self.tfms(uttr_melspec) #if tfms present, normalize it
 
-        label = row['label']
+        label = row['Label_id']
 
         return uttr_melspec, label #return normalized

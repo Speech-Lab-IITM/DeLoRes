@@ -10,15 +10,18 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-duration = 1
+#random sample is taken from the whole audio frame
+complete_data = pd.read_csv("/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/birdsong/combined_data.csv")
+duration = 10
 print(duration,'duration')
-class SpeechCommandsV1Train(Dataset):
+train, test = train_test_split(complete_data, test_size=0.2, random_state=1, stratify=complete_data['Label'])
+
+class BirdSongDatasetTrain(Dataset):
     def __init__(self,tfms=None,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv1/train/"
-        self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/Bird_audio/"
+        self.uttr_labels= train
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
-        self.no_of_classes= len(self.labels_dict)
+        self.no_of_classes = 2
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -38,15 +41,14 @@ class SpeechCommandsV1Train(Dataset):
 
         label = row['Label']
 
-        return uttr_melspec, self.labels_dict[label] #return normalized
+        return uttr_melspec, label #return normalized
 
-class SpeechCommandsV1Test(Dataset):
+class BirdSongDatasetTest(Dataset):
     def __init__(self,tfms=None,sample_rate=16000):        
-        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv1/train/"
-        self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/Bird_audio/"
+        self.uttr_labels= test
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
-        self.no_of_classes= len(self.labels_dict)
+        self.no_of_classes = 2
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -66,4 +68,5 @@ class SpeechCommandsV1Test(Dataset):
 
         label = row['Label']
 
-        return uttr_melspec, self.labels_dict[label] #return normalized
+        return uttr_melspec, label #return normalized
+        

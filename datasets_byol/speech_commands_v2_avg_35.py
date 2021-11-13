@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 duration = 1
 print(duration,'duration')
 class SpeechCommandsV2_35_Train(Dataset):
-    def __init__(self,sample_rate=16000):                
+    def __init__(self,tfms=None,sample_rate=16000):                
         self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/speech_cmd_v2_data/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
@@ -27,18 +27,21 @@ class SpeechCommandsV2_35_Train(Dataset):
     def __getitem__(self, idx):
         row = self.uttr_labels.iloc[idx,:]
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
-        wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
-        wave_audio = torch.tensor(wave_audio)
-        #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
-        #wave_random1sec = extract_window(wave_normalised,data_size=duration)
-        wave_audio = extract_window(wave_audio,data_size=duration)
-        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
-        uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
+        wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate) #load file
+        wave_audio = torch.tensor(wave_audio) #convert into ttorch tensor
+        wave_audio = extract_window(wave_audio,data_size=duration) #extract fixes size length
+        uttr_melspec = extract_log_mel_spectrogram(wave_audio, self.to_mel_spec) #convert into logmel
+        uttr_melspec=uttr_melspec.unsqueeze(0) #unsqueeze it
+
+        if self.tfms:
+            uttr_melspec=self.tfms(uttr_melspec) #if tfms present, normalize it
+
         label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+
+        return uttr_melspec, self.labels_dict[label] #return normalized
 
 class SpeechCommandsV2_35_Test(Dataset):
-    def __init__(self,sample_rate=16000):        
+    def __init__(self,tfms=None,sample_rate=16000):        
         self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/speech_cmd_v2_data/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
@@ -52,12 +55,15 @@ class SpeechCommandsV2_35_Test(Dataset):
     def __getitem__(self, idx):
         row = self.uttr_labels.iloc[idx,:]
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
-        wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
-        wave_audio = torch.tensor(wave_audio)
-        #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
-        #wave_random1sec = extract_window(wave_normalised,data_size=duration)
-        wave_audio = extract_window(wave_audio,data_size=duration)
-        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
-        uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
+        wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate) #load file
+        wave_audio = torch.tensor(wave_audio) #convert into ttorch tensor
+        wave_audio = extract_window(wave_audio,data_size=duration) #extract fixes size length
+        uttr_melspec = extract_log_mel_spectrogram(wave_audio, self.to_mel_spec) #convert into logmel
+        uttr_melspec=uttr_melspec.unsqueeze(0) #unsqueeze it
+
+        if self.tfms:
+            uttr_melspec=self.tfms(uttr_melspec) #if tfms present, normalize it
+
         label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+
+        return uttr_melspec, self.labels_dict[label] #return normalized

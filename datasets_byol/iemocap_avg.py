@@ -22,6 +22,7 @@ class IEMOCAPTrain(Dataset):
         self.labels_dict ={'neu':0, 'ang':1, 'sad':2, 'hap':3} 
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -51,6 +52,7 @@ class IEMOCAPTest(Dataset):
         self.labels_dict ={'neu':0, 'ang':1, 'sad':2, 'hap':3} 
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)

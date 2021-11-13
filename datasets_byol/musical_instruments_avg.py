@@ -11,20 +11,17 @@ from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
 
-duration = 9
+duration = 4
 print(duration,'duration')
 
-class TutUrbanSoundsTrain(Dataset):
+class MusicalInstrumentsTrain(Dataset):
     def __init__(self,tfms=None,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/magenta/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
-        self.labels_dict = {'airport': 0, 'bus': 1, 'metro': 2, 'metro_station': 3, 'park': 4,
-         'public_square': 5, 'shopping_mall': 6, 'street_pedestrian': 7,
-         'street_traffic': 8, 'tram': 9}
-        self.no_of_classes= len(self.labels_dict)
+        self.no_of_classes= 11
         self.to_mel_spec = MelSpectrogramLibrosa()
-
+        self.tfms = tfms
     def __len__(self):
         return len(self.uttr_labels)
 
@@ -44,17 +41,15 @@ class TutUrbanSoundsTrain(Dataset):
 
         return uttr_melspec, self.labels_dict[label] #return normalized
 
-class TutUrbanSoundsTest(Dataset):
+
+class MusicalInstrumentsTest(Dataset):
     def __init__(self,tfms=None,sample_rate=16000):        
-        self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
+        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/magenta/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
-        self.labels_dict = {'airport': 0, 'bus': 1, 'metro': 2, 'metro_station': 3, 'park': 4,
-         'public_square': 5, 'shopping_mall': 6, 'street_pedestrian': 7,
-         'street_traffic': 8, 'tram': 9}
-        self.no_of_classes= len(self.labels_dict)
+        self.no_of_classes = 11
         self.to_mel_spec = MelSpectrogramLibrosa()
-
+        self.tfms = tfms
     def __len__(self):
         return len(self.uttr_labels)
     
@@ -73,3 +68,5 @@ class TutUrbanSoundsTest(Dataset):
         label = row['Label']
 
         return uttr_melspec, self.labels_dict[label] #return normalized
+
+        

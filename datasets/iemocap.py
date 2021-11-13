@@ -6,10 +6,11 @@ import tensorflow as tf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from datasets.data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa, signal_to_frame
+from datasets.data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa, signal_to_frame, get_avg_duration
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
-
+from sklearn.model_selection import train_test_split
+duration = 4
 class IEMOCAPTrain(Dataset):
     def __init__(self,sample_rate=16000):        
         self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/iemocap/iemocap/IEMOCAP/"
@@ -28,11 +29,13 @@ class IEMOCAPTrain(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
-        wave_random1sec = extract_window(wave_normalised)
+        #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
+        #wave_random1sec = extract_window(wave_normalised,data_size=duration)
+        wave_audio = extract_window(wave_audio,data_size=duration)
+        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
         label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+        return uttr_melspec, label
 
 
 class IEMOCAPTest(Dataset):
@@ -43,7 +46,6 @@ class IEMOCAPTest(Dataset):
         self.sample_rate = sample_rate
         self.labels_dict ={'neu':0, 'ang':1, 'sad':2, 'hap':3} 
         self.no_of_classes= len(self.labels_dict)
-        self._n_frames = 96 # * Taken from cola implementation equivalent to 960 milliseconds
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -54,19 +56,11 @@ class IEMOCAPTest(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        wave_audio_chopped = signal_to_frame(wave_audio,frame_length=self._n_frames * 160,
-                                    frame_step=self._n_frames * 160,pad_end=True)
-
-        # wave_audio_chopped = tf.signal.frame(
-        #                             wave_audio,frame_length=self._n_frames * 160,
-        #                             frame_step=self._n_frames * 160,pad_end=True)
-
-        #wave_audio_normalised = tf.math.l2_normalize(wave_audio_chopped, axis=-1, epsilon=1e-9)
-
-        extracted_logmel =[]
-        for i in np.arange(wave_audio_chopped.shape[0]):
-            wave_audio_normalised = f.normalize(wave_audio_chopped[i],dim=-1,p=2)
-            extracted_logmel.append(extract_log_mel_spectrogram(wave_audio_normalised, self.to_mel_spec))
+        #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
+        #wave_random1sec = extract_window(wave_normalised,data_size=duration)
+        wave_audio = extract_window(wave_audio,data_size=duration)
+        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
+        uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
         label = row['Label']
-        return torch.stack(extracted_logmel).unsqueeze(dim=1), self.labels_dict[label]
+        return uttr_melspec, label
 

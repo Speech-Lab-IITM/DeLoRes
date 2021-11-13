@@ -10,14 +10,17 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-duration = 1
+duration = 6
 print(duration,'duration')
-class SpeechCommandsV2Train(Dataset):
+complete_data = pd.read_csv("/nlsasfs/home/nltm-pilot/ashishs/audio/complete_lid.csv")
+train, test = train_test_split(complete_data, test_size=0.05, random_state=1, stratify=complete_data['Label'])
+
+class LanguageIdentificationTrain(Dataset):
     def __init__(self,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
-        self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/audio/"
+        self.uttr_labels= train
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
+        self.labels_dict = {'french':0, 'spanish':1, 'german':2, 'russian':3, 'english':4, 'italian':5}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
 
@@ -32,17 +35,17 @@ class SpeechCommandsV2Train(Dataset):
         #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
         #wave_random1sec = extract_window(wave_normalised,data_size=duration)
         wave_audio = extract_window(wave_audio,data_size=duration)
-        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
+        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)        
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
         label = row['Label']
         return uttr_melspec, self.labels_dict[label]
 
-class SpeechCommandsV2Test(Dataset):
+class LanguageIdentificationTest(Dataset):
     def __init__(self,sample_rate=16000):        
-        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
-        self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
+        self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/audio/"
+        self.uttr_labels= test
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
+        self.labels_dict = {'french':0, 'spanish':1, 'german':2, 'russian':3, 'english':4, 'italian':5}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
 
@@ -57,7 +60,7 @@ class SpeechCommandsV2Test(Dataset):
         #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
         #wave_random1sec = extract_window(wave_normalised,data_size=duration)
         wave_audio = extract_window(wave_audio,data_size=duration)
-        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
+        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)        
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
         label = row['Label']
         return uttr_melspec, self.labels_dict[label]

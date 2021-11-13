@@ -12,9 +12,9 @@ import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
 duration = 1
 print(duration,'duration')
-class SpeechCommandsV2Train(Dataset):
+class SpeechCommandsV1Train(Dataset):
     def __init__(self,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv1/train/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
         self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
@@ -37,9 +37,9 @@ class SpeechCommandsV2Train(Dataset):
         label = row['Label']
         return uttr_melspec, self.labels_dict[label]
 
-class SpeechCommandsV2Test(Dataset):
+class SpeechCommandsV1Test(Dataset):
     def __init__(self,sample_rate=16000):        
-        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
+        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv1/train/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
         self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}

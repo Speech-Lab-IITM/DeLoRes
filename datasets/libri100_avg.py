@@ -10,15 +10,14 @@ from datasets.data_utils import extract_log_mel_spectrogram, extract_window, Mel
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-duration = 1
+duration = 12
 print(duration,'duration')
-class SpeechCommandsV2Train(Dataset):
+class Libri100Train(Dataset):
     def __init__(self,sample_rate=16000):                
-        self.feat_root =  "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
+        self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/libri100/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
-        self.no_of_classes= len(self.labels_dict)
+        self.no_of_classes= 585
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -26,24 +25,23 @@ class SpeechCommandsV2Train(Dataset):
 
     def __getitem__(self, idx):
         row = self.uttr_labels.iloc[idx,:]
-        uttr_path =os.path.join(self.feat_root,row['AudioPath'])
+        uttr_path =os.path.join(self.feat_root+'wav/',row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
         #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
         #wave_random1sec = extract_window(wave_normalised,data_size=duration)
         wave_audio = extract_window(wave_audio,data_size=duration)
-        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
+        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)        
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
-        label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+        label = row['Label_id']
+        return uttr_melspec, label
 
-class SpeechCommandsV2Test(Dataset):
+class Libri100Test(Dataset):
     def __init__(self,sample_rate=16000):        
-        self.feat_root = "/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/speechv2/train/"
+        self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/libri100/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
-        self.labels_dict = {'unknown': 0, 'down': 1, 'go': 2, 'silence': 3, 'on': 4, 'stop': 5, 'left': 6, 'no': 7,'up': 8, 'yes': 9, 'off': 10, 'right': 11}
-        self.no_of_classes= len(self.labels_dict)
+        self.no_of_classes = 585
         self.to_mel_spec = MelSpectrogramLibrosa()
 
     def __len__(self):
@@ -51,13 +49,13 @@ class SpeechCommandsV2Test(Dataset):
     
     def __getitem__(self, idx):
         row = self.uttr_labels.iloc[idx,:]
-        uttr_path =os.path.join(self.feat_root,row['AudioPath'])
+        uttr_path =os.path.join(self.feat_root+'wav/',row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
         #wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
         #wave_random1sec = extract_window(wave_normalised,data_size=duration)
         wave_audio = extract_window(wave_audio,data_size=duration)
-        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)
+        wave_random1sec=f.normalize(wave_audio,dim=-1,p=2)        
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
-        label = row['Label']
-        return uttr_melspec, self.labels_dict[label]
+        label = row['Label_id']
+        return uttr_melspec, label

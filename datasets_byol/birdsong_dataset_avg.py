@@ -23,6 +23,7 @@ class BirdSongDatasetTrain(Dataset):
         self.sample_rate = sample_rate
         self.no_of_classes = 2
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -50,6 +51,7 @@ class BirdSongDatasetTest(Dataset):
         self.sample_rate = sample_rate
         self.no_of_classes = 2
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)

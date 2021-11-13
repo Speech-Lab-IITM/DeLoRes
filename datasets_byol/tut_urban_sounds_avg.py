@@ -24,6 +24,7 @@ class TutUrbanSoundsTrain(Dataset):
          'street_traffic': 8, 'tram': 9}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -54,6 +55,7 @@ class TutUrbanSoundsTest(Dataset):
          'street_traffic': 8, 'tram': 9}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)

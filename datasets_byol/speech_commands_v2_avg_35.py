@@ -22,6 +22,7 @@ class SpeechCommandsV2_35_Train(Dataset):
         self.labels_dict = dict(zip(['sheila', 'left', 'four', 'up', 'stop', 'off', 'dog', 'go', 'three', 'cat', 'follow', 'wow', 'down', 'two', 'happy', 'six', 'one', 'eight', 'on', 'five', 'bird', 'nine', 'yes', 'marvin', 'tree', 'learn', 'seven', 'zero', 'right', 'no', 'visual', 'backward', 'forward', 'bed', 'house'],list(range(0,35))))
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -50,6 +51,7 @@ class SpeechCommandsV2_35_Test(Dataset):
         self.labels_dict = dict(zip(['sheila', 'left', 'four', 'up', 'stop', 'off', 'dog', 'go', 'three', 'cat', 'follow', 'wow', 'down', 'two', 'happy', 'six', 'one', 'eight', 'on', 'five', 'bird', 'nine', 'yes', 'marvin', 'tree', 'learn', 'seven', 'zero', 'right', 'no', 'visual', 'backward', 'forward', 'bed', 'house'],list(range(0,35))))
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)

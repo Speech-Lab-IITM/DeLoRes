@@ -21,6 +21,7 @@ class Libri100Train(Dataset):
         self.sample_rate = sample_rate
         self.no_of_classes= 585
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -48,6 +49,7 @@ class Libri100Test(Dataset):
         self.sample_rate = sample_rate
         self.no_of_classes = 585
         self.to_mel_spec = MelSpectrogramLibrosa()
+        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)

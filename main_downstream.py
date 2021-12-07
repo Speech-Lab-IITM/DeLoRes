@@ -11,8 +11,8 @@ from datasets.data_utils import DataUtils
 from datasets.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
 from byol.model import AudioNTT2020
-from utils import (AverageMeter,Metric,freeze_effnet,get_downstream_parser,load_pretrain,calc_norm_stats,load_pretrain_byol) #resume_from_checkpoint, save_to_checkpoint,set_seed
-from augmentations import PrecomputedNorm
+from utils import (AverageMeter,Metric,freeze_effnet,freeze_byol,get_downstream_parser,load_pretrain_effnet,load_pretrain_byol) #resume_from_checkpoint, save_to_checkpoint,set_seed
+
 
 def get_logger(args):
     logger = logging.getLogger(__name__)
@@ -49,31 +49,38 @@ def main_worker(gpu, args):
     assert args.batch_size % args.world_size == 0
     per_device_batch_size = args.batch_size // args.world_size
 
-    train_dataset,test_dataset = get_dataset(args.down_stream_task, aug = None)
-
-    norm_stats = calc_norm_stats(train_dataset,test_dataset)
-
-    train_dataset,test_dataset = get_dataset(args.down_stream_task, aug = PrecomputedNorm(norm_stats))
+    train_dataset,test_dataset = get_dataset(args.down_stream_task)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, shuffle=True, seed=1)
 
     train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=per_device_batch_size,
+                                                collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True,sampler = train_sampler)
 
     test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=args.batch_size,
+                                                collate_fn = DataUtils.collate_fn_padd_2,
                                                 pin_memory=True)
 
     # models
-    model = AudioNTT2020(args, n_mels=64, d=2048, no_of_classes=train_dataset.no_of_classes).cuda(gpu)
+    if args.use_model == "effnet":
+        model = DownstreamClassifer(no_of_classes=train_dataset.no_of_classes,
+                                final_pooling_type=args.final_pooling_type).cuda(gpu)
+    elif args.use_model == "byol":
+        model = AudioNTT2020(args, n_mels=64, d=2048, no_of_classes=train_dataset.no_of_classes).cuda(gpu)
+    else:
+        raise NotImplementedError
+        sys.exit(0)
 
-    #if args.freeze_effnet:
-    #    freeze_effnet(model)
 
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    if args.freeze_effnet:
-        freeze_effnet(model)
 
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu], find_unused_parameters=True) #I have to use this (find_unused_parameters=Ture)
+    if args.freeze:
+        if args.use_model == "effnet":
+            freeze_effnet(model)
+        elif args.use_model == "byol":
+            freeze_byol(model)
+    
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     # Resume
     start_epoch =0
@@ -82,14 +89,13 @@ def main_worker(gpu, args):
         resume_from_checkpoint(args.pretrain_path,model,optimizer)
     elif args.pretrain_path:
         logger.info("pretrain Weights init")
-        load_pretrain_byol(args.pretrain_path,model,args.load_only_efficientNet,args.freeze_effnet) #this function also uses freeze code
+        if args.use_model == "effnet":
+            load_pretrain_effnet(args.pretrain_path,model,args.load_only_encoder)
+        elif args.use_model == "byol":
+            load_pretrain_byol(args.pretrain_path,model,args.load_only_encoder)
     else:
         logger.info("Random Weights init")
 
-    # Freeze effnet
-    #if args.freeze_effnet:
-    #    freeze_effnet(model)
-    
     criterion = nn.CrossEntropyLoss().cuda(gpu)
     optimizer = torch.optim.Adam(
         filter(lambda x: x.requires_grad, model.parameters()),
@@ -197,7 +203,7 @@ def main():
 
     # single-node distributed training
     args.rank = 0
-    args.dist_url = 'tcp://localhost:58364'
+    args.dist_url = 'tcp://localhost:58278'
     args.world_size = args.ngpus_per_node
     torch.multiprocessing.spawn(main_worker, (args,), args.ngpus_per_node)
 

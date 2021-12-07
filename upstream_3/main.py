@@ -28,23 +28,24 @@ from models_byol import AudioNTT2020
 AUDIO_SR = 16000
 tf.config.set_visible_devices([], 'GPU')
 
-logging.basicConfig(filename='decar_l2.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='decar_l2_l2.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
 logger=logging.getLogger()
 logger.setLevel(logging.INFO)
 
 class AugmentationModule:
     """BYOL-A augmentation module example, the same parameter with the paper."""
 
-    def __init__(self, size, epoch_samples, log_mixup_exp=True, mixup_ratio=0.4):
+    def __init__(self, args, size, epoch_samples, log_mixup_exp=True, mixup_ratio=0.4):
         self.train_transform = nn.Sequential(
             MixupBYOLA(ratio=mixup_ratio, log_mixup_exp=log_mixup_exp),
             RandomResizeCrop(virtual_crop_scale=(1.0, 1.5), freq_scale=(0.6, 1.5), time_scale=(0.6, 1.5)),
         )
         self.pre_norm = RunningNorm(epoch_samples=epoch_samples)
         print('Augmentations:', self.train_transform)
-
+        self.norm_status = args.use_norm
     def __call__(self, x):
-        #x = self.pre_norm(x)
+        if self.norm_status == "byol":
+            x = self.pre_norm(x)
         return self.train_transform(x), self.train_transform(x)
 
 def create_dir(directory):
@@ -72,7 +73,7 @@ def main(gpu, args):
     if args.use_model == 'effnet':
         model = AAAI_BARLOW(args).cuda(gpu)
     elif args.use_model == 'byol':
-        model = AudioNTT2020(args, n_mels=64, d=512).cuda(gpu)
+        model = AudioNTT2020(args, n_mels=64, d=2048).cuda(gpu)
 
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
@@ -90,8 +91,8 @@ def main(gpu, args):
                      weight_decay_filter=True,
                      lars_adaptation_filter=True)
 
-    tfms = AugmentationModule((64, 96), 2 * len(list_of_files_directory))
-    train_dataset = BARLOW(list_of_files_directory,tfms)
+    tfms = AugmentationModule(args, (64, 96), 2 * len(list_of_files_directory))
+    train_dataset = BARLOW(args, list_of_files_directory, tfms)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
     per_device_batch_size = args.batch_size // args.world_size
@@ -232,9 +233,9 @@ if __name__== "__main__":
 
     args.rank = 0
     args.dist_url = 'tcp://localhost:58472'
-    args.world_size = 4
+    args.world_size = 2
 
-    torch.multiprocessing.spawn(main, (args,), 4)
+    torch.multiprocessing.spawn(main, (args,), 2)
 
     #main(args)
 

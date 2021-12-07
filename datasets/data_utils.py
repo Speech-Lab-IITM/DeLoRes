@@ -7,6 +7,8 @@ import random
 import torch.nn.functional as F
 import scipy
 from scipy.io import wavfile
+import audioread
+import os
 
 def signal_to_frame(signal, frame_length, frame_step, pad_end=False, pad_value=0, axis=-1):
     """
@@ -60,13 +62,24 @@ def extract_log_mel_spectrogram(waveform, to_mel_spec):
     log_mel_spectrograms = (to_mel_spec(waveform) + torch.finfo().eps).log()
     return log_mel_spectrograms
 
-def get_avg_duration(data,root_path):
+def get_avg_duration(data_duration,root_path):
     sum = 0
-    for i in range(data.shape[0]):
-        sample_rate, data_val = wavfile.read(root_path+data.iloc[i,:]['AudioPath'])
-        sum+=(len(data_val)/sample_rate)    
-    
-    return int(sum/data.shape[0])
+    count = 0
+    print(data_duration.shape)
+    for i in range(data_duration.shape[0]):
+        uttr_path = os.path.join(root_path,data_duration.iloc[i,:]['AudioPath'])
+        data_val,sample_rate = librosa.core.load(uttr_path)
+        #sample_rate, data_val = wavfile.read(root_path+data_duration.iloc[i,:]['AudioPath'])
+        sum+=(len(data_val)/sample_rate)
+        if len(data_val)/sample_rate < 10:
+            count+=1
+        #with audioread.audio_open(root_path+data.iloc[i,:]['AudioPath']) as f:
+        #    sum+=f.duration
+        #    if f.duration < 10.041642255202271:
+        #        count+=1
+    #print(count)
+    #print(data.shape[0])     
+    return int(sum/data_duration.shape[0])
 
 
 class DataUtils():

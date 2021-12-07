@@ -189,9 +189,9 @@ def extract_window(waveform, seg_length=16000):
   padded_waveform = tf.pad(waveform, paddings=[[left_pad, right_pad]])
   return tf.image.random_crop(padded_waveform, [seg_length])
 
-def extract_window_torch(wav, seg_length=16000):
+def extract_window_torch(length, wav, seg_length=16000):
     
-    unit_length = int(0.96 * 16000)
+    unit_length = int(length * 16000)
 
     length_adj = unit_length - len(wav)
     if length_adj > 0:
@@ -235,5 +235,11 @@ def get_upstream_parser():
                         help='Input CSV with all file paths under column named files')
     parser.add_argument('--use_model', type=str, required = True, 
                         help='Which model to use')
+    parser.add_argument('--use_norm', type=str, required = True, 
+                        help='Which normalization to use')
+    parser.add_argument('--final_units', type=int, required = True, 
+                        help='Number of units in prediction head')
+    parser.add_argument('--length_wave', type=float, required = True, 
+                        help='Length of wave split')
   
     return parser

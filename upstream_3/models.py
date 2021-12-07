@@ -10,9 +10,10 @@ class AAAI_BARLOW(nn.Module):
         super(AAAI_BARLOW, self).__init__()
 
         self.args = args
+        self.units = args.final_units
         self.model_efficient = EfficientNet.from_name('efficientnet-b0',include_top = False, in_channels = 1,image_size = None)
-        self.projector = nn.Sequential(nn.Dropout(0.5),nn.Linear(1280, 4096, bias=False),nn.BatchNorm1d(4096),nn.ReLU(),nn.Linear(4096, 4096, bias = False))
-        self.bn = nn.BatchNorm1d(4096, affine=False)
+        self.projector = nn.Sequential(nn.Dropout(0.5),nn.Linear(1280, self.units, bias=False),nn.BatchNorm1d(self.units),nn.ReLU(),nn.Linear(self.units, self.units, bias = False))
+        self.bn = nn.BatchNorm1d(self.units, affine=False)
 
     def forward(self,batch1, batch2):
 

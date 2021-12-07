@@ -6,17 +6,15 @@ import tensorflow as tf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from datasets.data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa, signal_to_frame, get_avg_duration
+from datasets.data_utils import extract_log_mel_spectrogram, extract_window, MelSpectrogramLibrosa, signal_to_frame
 from datasets.data_utils import DataUtils
 import torch.nn.functional as f
 from sklearn.model_selection import train_test_split
-
-duration = 9
-print(duration,'duration')
-
+#random sample is taken from the whole audio frame
+#complete_data = pd.read_csv("/nlsasfs/home/nltm-pilot/sandeshk/icassp/data/birdsong/combined_data.csv")
+#train, test = train_test_split(complete_data, test_size=0.2, random_state=1, stratify=complete_data['Label'])
 class TutUrbanSoundsTrain(Dataset):
-
-    def __init__(self, tfms=None, sample_rate=16000):                
+    def __init__(self,sample_rate=16000):                
         self.feat_root =  "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
         self.uttr_labels= pd.read_csv(self.feat_root+"train_data.csv")
         self.sample_rate = sample_rate
@@ -25,7 +23,6 @@ class TutUrbanSoundsTrain(Dataset):
          'street_traffic': 8, 'tram': 9}
         self.no_of_classes= len(self.labels_dict)
         self.to_mel_spec = MelSpectrogramLibrosa()
-        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
@@ -35,18 +32,15 @@ class TutUrbanSoundsTrain(Dataset):
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        wave_random1sec = extract_window(wave_audio,data_size=duration)
+        wave_normalised = f.normalize(wave_audio,dim=-1,p=2)
+        wave_random1sec = extract_window(wave_normalised)
         uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
-
-        if self.tfms:
-            uttr_melspec = self.tfms(uttr_melspec)
-
         label = row['Label']
-        return uttr_melspec.unsqueeze(0), self.labels_dict[label]
+        return uttr_melspec, self.labels_dict[label]
 
+#audio is divided into chunks of 1sec and then tested
 class TutUrbanSoundsTest(Dataset):
-
-    def __init__(self, tfms=None, sample_rate=16000):        
+    def __init__(self,sample_rate=16000):        
         self.feat_root = "/nlsasfs/home/nltm-pilot/ashishs/TUT-urban-acoustic-scenes-2018-development/"
         self.uttr_labels= pd.read_csv(self.feat_root+"test_data.csv")
         self.sample_rate = sample_rate
@@ -54,24 +48,25 @@ class TutUrbanSoundsTest(Dataset):
          'public_square': 5, 'shopping_mall': 6, 'street_pedestrian': 7,
          'street_traffic': 8, 'tram': 9}
         self.no_of_classes= len(self.labels_dict)
+        self._n_frames = 98 # * Taken from cola implementation equivalent to 980 milliseconds
         self.to_mel_spec = MelSpectrogramLibrosa()
-        self.tfms = tfms
 
     def __len__(self):
         return len(self.uttr_labels)
     
     def __getitem__(self, idx):
-
         row = self.uttr_labels.iloc[idx,:]
         uttr_path =os.path.join(self.feat_root,row['AudioPath'])
         wave_audio,sr = librosa.core.load(uttr_path, sr=self.sample_rate)
         wave_audio = torch.tensor(wave_audio)
-        wave_random1sec = extract_window(wave_audio,data_size=duration)
-        uttr_melspec = extract_log_mel_spectrogram(wave_random1sec, self.to_mel_spec)
-
-        if self.tfms:
-            uttr_melspec = self.tfms(uttr_melspec)
-
-
+        #wave_audio_chopped = tf.signal.frame(
+        #                            wave_audio,frame_length=self._n_frames * 160,
+        #                            frame_step=self._n_frames * 160,pad_end=True)
+        wave_audio_chopped = signal_to_frame(wave_audio,frame_length=self._n_frames * 160,
+                                    frame_step=self._n_frames * 160,pad_end=True)                             
+        extracted_logmel =[]
+        for i in np.arange(wave_audio_chopped.shape[0]):
+            wave_audio_normalised = f.normalize(wave_audio_chopped[i],dim=-1,p=2)
+            extracted_logmel.append(extract_log_mel_spectrogram(wave_audio_normalised, self.to_mel_spec))
         label = row['Label']
-        return uttr_melspec.unsqueeze(0), self.labels_dict[label]
+        return torch.stack(extracted_logmel).unsqueeze(dim=1), self.labels_dict[label]

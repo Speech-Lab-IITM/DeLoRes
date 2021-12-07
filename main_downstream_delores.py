@@ -10,7 +10,7 @@ import sys
 from datasets.data_utils import DataUtils
 from datasets.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
-from byol.model import AudioNTT2020
+from delores.model import AudioNTT2020
 from utils import (AverageMeter,Metric,freeze_effnet,freeze_byol,get_downstream_parser,load_pretrain_effnet,load_pretrain_byol,calc_norm_stats) #resume_from_checkpoint, save_to_checkpoint,set_seed
 from augmentations import PrecomputedNorm
 

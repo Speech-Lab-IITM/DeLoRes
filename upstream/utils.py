@@ -235,6 +235,8 @@ def get_upstream_parser():
                         help='Input CSV with all file paths under column named files')
     parser.add_argument('--use_model', type=str, required = True, 
                         help='Which model to use')
+    parser.add_argument('--use_norm', type=str, required = True, 
+                        help='Which normalization to use')
     parser.add_argument('--final_units', type=int, required = True, 
                         help='Number of units in prediction head')
     parser.add_argument('--length_wave', type=float, required = True, 

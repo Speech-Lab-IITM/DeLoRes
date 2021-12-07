@@ -7,10 +7,10 @@ import torch
 from torch import nn
 import sys
 
-from datasets.data_utils import DataUtils
-from datasets.dataset import get_dataset
+from datasets_delores_gen.data_utils import DataUtils
+from datasets_delores_gen.dataset import get_dataset
 from efficientnet.model import  DownstreamClassifer
-from byol.model import AudioNTT2020
+from delores.model import AudioNTT2020
 from utils import (AverageMeter,Metric,freeze_effnet,freeze_byol,get_downstream_parser,load_pretrain_effnet,load_pretrain_byol,calc_norm_stats) #resume_from_checkpoint, save_to_checkpoint,set_seed
 from augmentations import PrecomputedNorm
 
@@ -49,30 +49,19 @@ def main_worker(gpu, args):
     assert args.batch_size % args.world_size == 0
     per_device_batch_size = args.batch_size // args.world_size
 
-    train_dataset,test_dataset = get_dataset(args.down_stream_task, aug = None)
-    norm_stats = calc_norm_stats(train_dataset,test_dataset)
-    if args.norm == 'l2':
-        train_dataset,test_dataset = get_dataset(args.down_stream_task, aug = None)
-    elif args.norm == 'byol':
-        train_dataset,test_dataset = get_dataset(args.down_stream_task, aug = PrecomputedNorm(norm_stats))
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, shuffle=True, seed=1)
-    train_loader = ''
-    test_loader = ''
-    if args.norm == 'l2':
-        train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=per_device_batch_size,
-                                                    collate_fn = DataUtils.collate_fn_padd_2,
-                                                    pin_memory=True,sampler = train_sampler)
+    if args.norm != "byol":
+        print("Only BYOL norm supported")
+        sys.exit(0)
 
-        test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=args.batch_size,
-                                                    collate_fn = DataUtils.collate_fn_padd_2,
-                                                    pin_memory=True)
-    elif args.norm == 'byol':
-        train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=per_device_batch_size,
+    train_dataset,test_dataset = get_dataset(args.down_stream_task, aug = None) #then make dataset with norm stats
+
+    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, shuffle=True, seed=1) #shuffle
+
+    train_loader = torch.utils.data.DataLoader(train_dataset,batch_size=per_device_batch_size,
                                                 pin_memory=True,sampler = train_sampler)
 
-        test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=args.batch_size,
+    test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=args.batch_size,
                                                 pin_memory=True)
-
 
     # models
     if args.use_model == "effnet":
@@ -84,7 +73,6 @@ def main_worker(gpu, args):
         raise NotImplementedError
         sys.exit(0)
 
-
     model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     if args.freeze:
@@ -92,7 +80,7 @@ def main_worker(gpu, args):
             freeze_effnet(model)
         elif args.use_model == "byol":
             freeze_byol(model)
-    
+
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[gpu])
 
     # Resume
@@ -216,7 +204,7 @@ def main():
 
     # single-node distributed training
     args.rank = 0
-    args.dist_url = 'tcp://localhost:58364'
+    args.dist_url = 'tcp://localhost:58391'
     args.world_size = args.ngpus_per_node
     torch.multiprocessing.spawn(main_worker, (args,), args.ngpus_per_node)
 

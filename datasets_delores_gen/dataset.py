@@ -1,6 +1,6 @@
-from datasets_byol_gen.musical_instruments_avg import MusicalInstrumentsTrain, MusicalInstrumentsTest
-from datasets_byol_gen.language_identification_avg import LanguageIdentificationTrain, LanguageIdentificationTest
-from datasets_byol_gen.voxceleb_avg import Voxceleb1DatasetTrain, Voxceleb1DatasetTest
+from datasets_delores_gen.musical_instruments_avg import MusicalInstrumentsTrain, MusicalInstrumentsTest
+from datasets_delores_gen.language_identification_avg import LanguageIdentificationTrain, LanguageIdentificationTest
+from datasets_delores_gen.voxceleb_avg import Voxceleb1DatasetTrain, Voxceleb1DatasetTest
 import torch
 
 def get_dataset(downstream_task_name,aug = None):

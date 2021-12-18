@@ -19,7 +19,7 @@ class RandomResizeCrop(nn.Module):
         self.freq_scale = freq_scale
         self.time_scale = time_scale
         self.interpolation = 'bicubic'
-        assert time_scale[1] >= 1.0 and freq_scale[1] >= 1.0
+        #assert time_scale[1] >= 1.0 and freq_scale[1] >= 1.0
 
     @staticmethod
     def get_params(virtual_crop_size, in_size, time_scale, freq_scale):

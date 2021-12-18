@@ -57,7 +57,7 @@ class AudioNTT2020Task6(nn.Module, NetworkCommonMixIn):
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2, stride=2),
-            
+
         )
         self.fc = nn.Sequential(
             nn.Linear(64 * (n_mels // (2**3)), d),
@@ -69,7 +69,7 @@ class AudioNTT2020Task6(nn.Module, NetworkCommonMixIn):
         self.d = d
 
     def forward(self, x):
-        x = self.features(x)       # (batch, ch, mel, time)       
+        x = self.features(x)       # (batch, ch, mel, time)
         x = x.permute(0, 3, 2, 1) # (batch, time, mel, ch)
         B, T, D, C = x.shape
         x = x.reshape((B, T, C*D)) # (batch, time, mel*ch)
@@ -86,34 +86,55 @@ class AudioNTT2020(AudioNTT2020Task6):
         super().__init__(n_mels=n_mels, d=d)
         self.args = args
         self.units = args.final_units
-        self.projector = nn.Sequential(nn.Dropout(0.5),nn.Linear(2048, self.units, bias=False),nn.BatchNorm1d(self.units),nn.ReLU(),nn.Linear(self.units, self.units, bias = False))
+        self.projector = nn.Sequential(nn.Dropout(0.5),nn.Linear(2048, self.units, bias=False),nn.BatchNorm1d(self.units),nn.ReLU(),nn.Linear(self.units, self.units, bias=False),nn.BatchNorm1d(self.units),nn.ReLU(),nn.Linear(self.units, self.units, bias = False)) #origanal barlow setup
         self.bn = nn.BatchNorm1d(self.units, affine=False)
 
-    def forward(self, batch1, batch2):
+    def forward(self, input_var):
+        def max_mean(z):
+            (z_1, _) = torch.max(z, dim=1)
+            z_2 = torch.mean(z, dim=1)
+            z = z_1 + z_2
+            return(z)
+        Z = []
+        for i in range(len(input_var)):
+            z = super().forward(input_var[i])
+            z = max_mean(z)
+            Z.append(z)
 
-        z1 = super().forward(batch1)
-        z2 = super().forward(batch2)
+        #z1 = super().forward(batch1)
+        #z2 = super().forward(batch2)
 
-        (z1_1, _) = torch.max(z1, dim=1)
-        z1_2 = torch.mean(z1, dim=1)
-        z1 = z1_1 + z1_2
+        #(z1_1, _) = torch.max(z1, dim=1)
+        #z1_2 = torch.mean(z1, dim=1)
+        #z1 = z1_1 + z1_2
 
-        (z2_1, _) = torch.max(z2, dim=1)
-        z2_2 = torch.mean(z2, dim=1)
-        z2 = z2_1 + z2_2
+        #(z2_1, _) = torch.max(z2, dim=1)
+        #z2_2 = torch.mean(z2, dim=1)
+        #z2 = z2_1 + z2_2
 
-        x1 = self.projector(z1)
-        x2 = self.projector(z2)
+        X = []
+        for i in range(len(Z)):
+            X.append(self.projector(Z[i]))
 
-        c = self.bn(x1).T @ self.bn(x2)
+        #x1 = self.projector(z1)
+        #x2 = self.projector(z2)
+        loss_avg = 0
+        count = 0
+        for i in range(len(X)):
+            for j in range(i+1,len(X)):
+                x1 = X[i]
+                x2 = X[j]
+                c = self.bn(x1).T @ self.bn(x2)
 
-        # sum the cross-correlation matrix between all gpus
-        c.div_(self.args.batch_size)
-        torch.distributed.all_reduce(c)
+                # sum the cross-correlation matrix between all gpus
+                c.div_(self.args.batch_size)
+                torch.distributed.all_reduce(c)
 
-        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
-        off_diag = off_diagonal(c).pow_(2).sum()
+                on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+                off_diag = off_diagonal(c).pow_(2).sum()
 
-        loss = on_diag + self.args.lambd * off_diag
+                loss = on_diag + self.args.lambd * off_diag
+                loss_avg+=loss
+                count+=1
 
-        return loss
+        return loss_avg/count
